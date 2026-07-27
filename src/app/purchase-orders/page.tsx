@@ -27,9 +27,9 @@ interface Product {
 }
 
 const statusConfig: Record<string, { label: string; icon: typeof Truck; color: string }> = {
-  pending: { label: 'Pending', icon: Package, color: '#f59e0b' },
-  shipped: { label: 'Shipped', icon: Truck, color: '#3b82f6' },
-  delivered: { label: 'Delivered', icon: CheckCircle, color: '#16a34a' },
+  pending: { label: '\u5f85\u53d1\u8d27', icon: Package, color: '#f59e0b' },
+  shipped: { label: '\u5df2\u53d1\u8d27', icon: Truck, color: '#3b82f6' },
+  delivered: { label: '\u5df2\u9001\u8fbe', icon: CheckCircle, color: '#16a34a' },
 };
 
 export default function PurchaseOrdersPage() {
@@ -67,11 +67,11 @@ export default function PurchaseOrdersPage() {
 
   const handleCreate = async () => {
     if (!form.po_number) {
-      setError('PO number is required');
+      setError('PO \u7f16\u53f7\u4e3a\u5fc5\u586b\u9879');
       return;
     }
     if (items.length === 0) {
-      setError('At least one item is required');
+      setError('\u81f3\u5c11\u9700\u8981\u6dfb\u52a0\u4e00\u4e2a\u4ea7\u54c1');
       return;
     }
     setSaving(true);
@@ -88,7 +88,7 @@ export default function PurchaseOrdersPage() {
       });
       const json = await res.json();
       if (!res.ok) {
-        setError(json.error || 'Failed to create');
+        setError(json.error || '\u521b\u5efa\u5931\u8d25');
         return;
       }
       setShowModal(false);
@@ -96,7 +96,7 @@ export default function PurchaseOrdersPage() {
       setItems([]);
       fetchPOs();
     } catch {
-      setError('Network error');
+      setError('\u7f51\u7edc\u9519\u8bef');
     } finally {
       setSaving(false);
     }
@@ -116,7 +116,7 @@ export default function PurchaseOrdersPage() {
   };
 
   const deletePO = async (id: number) => {
-    if (!confirm('Delete this purchase order?')) return;
+    if (!confirm('\u786e\u5b9a\u8981\u5220\u9664\u8be5\u91c7\u8d2d\u8ba2\u5355\u5417\uff1f')) return;
     try {
       await fetch(`/api/purchase-orders?id=${id}`, { method: 'DELETE' });
       fetchPOs();
@@ -148,24 +148,24 @@ export default function PurchaseOrdersPage() {
   return (
     <div>
       <div className="page-header">
-        <h2>PO Management</h2>
-        <p>Create and track purchase orders for Takealot warehouse shipments</p>
+        <h2>PO {'\u5efa\u5355\u7ba1\u7406'}</h2>
+        <p>{'\u521b\u5efa\u548c\u8ddf\u8e2a\u53d1\u5f80 Takealot \u4ed3\u5e93\u7684\u91c7\u8d2d\u8ba2\u5355/\u8d27\u4ef6'}</p>
       </div>
 
       <div className="toolbar">
         <span style={{ fontSize: 12, color: '#64748b' }}>
-          {total} purchase orders
+          {'\u5171'} {total} {'\u4e2a\u91c7\u8d2d\u8ba2\u5355'}
         </span>
         <div style={{ flex: 1 }} />
         <button className="btn btn-primary" onClick={() => { setShowModal(true); setError(''); }}>
           <Plus size={14} />
-          Create PO
+          {'\u521b\u5efa PO'}
         </button>
       </div>
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: 60, color: '#94a3b8' }}>
-          Loading...
+          {'\u52a0\u8f7d\u4e2d...'}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -202,7 +202,7 @@ export default function PurchaseOrdersPage() {
                         className="btn btn-primary btn-sm"
                         onClick={() => updateStatus(po.id, nextStatus)}
                       >
-                        Mark as {statusConfig[nextStatus].label}
+                        {'\u6807\u8bb0\u4e3a'}{statusConfig[nextStatus].label}
                       </button>
                     )}
                     <button
@@ -220,20 +220,20 @@ export default function PurchaseOrdersPage() {
                     </p>
                   )}
                   <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 8 }}>
-                    Created: {new Date(po.created_at).toLocaleDateString('en-ZA')}
+                    {'\u521b\u5efa\u65f6\u95f4'}: {new Date(po.created_at).toLocaleDateString('zh-CN')}
                   </div>
                   <table className="data-table" style={{ border: 'none' }}>
                     <thead>
                       <tr>
-                        <th>Product</th>
+                        <th>{'\u4ea7\u54c1'}</th>
                         <th>SKU</th>
-                        <th>Quantity</th>
+                        <th>{'\u6570\u91cf'}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {po.items.map((item) => (
                         <tr key={item.id}>
-                          <td>{item.product_name || 'Unknown'}</td>
+                          <td>{item.product_name || '\u672a\u77e5'}</td>
                           <td style={{ fontFamily: 'monospace', fontSize: 12 }}>
                             {item.product_sku || '-'}
                           </td>
@@ -257,7 +257,7 @@ export default function PurchaseOrdersPage() {
                 border: '1px solid #e2e8f0',
               }}
             >
-              No purchase orders yet. Click &quot;Create PO&quot; to get started.
+              {'\u6682\u65e0\u91c7\u8d2d\u8ba2\u5355\u3002\u70b9\u51fb\u201c\u521b\u5efa PO\u201d\u5f00\u59cb\u4f7f\u7528\u3002'}
             </div>
           )}
         </div>
@@ -267,7 +267,7 @@ export default function PurchaseOrdersPage() {
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Create Purchase Order</h3>
+              <h3>{'\u521b\u5efa\u91c7\u8d2d\u8ba2\u5355'}</h3>
               <button
                 onClick={() => setShowModal(false)}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
@@ -292,19 +292,19 @@ export default function PurchaseOrdersPage() {
                 </div>
               )}
               <div className="form-group">
-                <label>PO Number *</label>
+                <label>PO {'\u7f16\u53f7 *'}</label>
                 <input
                   value={form.po_number}
                   onChange={(e) => setForm({ ...form, po_number: e.target.value })}
-                  placeholder="e.g. PO-2025-004"
+                  placeholder={'\u4f8b\u5982 PO-2025-004'}
                 />
               </div>
               <div className="form-group">
-                <label>Notes</label>
+                <label>{'\u5907\u6ce8'}</label>
                 <textarea
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  placeholder="Optional notes..."
+                  placeholder={'\u53ef\u9009\u5907\u6ce8\u4fe1\u606f...'}
                   rows={2}
                   style={{
                     width: '100%',
@@ -320,10 +320,10 @@ export default function PurchaseOrdersPage() {
 
               <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <label style={{ fontSize: 13, fontWeight: 500, color: '#334155' }}>
-                  Items
+                  {'\u4ea7\u54c1\u660e\u7ec6'}
                 </label>
                 <button className="btn btn-secondary btn-sm" onClick={addItem}>
-                  <Plus size={12} /> Add Item
+                  <Plus size={12} /> {'\u6dfb\u52a0\u4ea7\u54c1'}
                 </button>
               </div>
 
@@ -350,7 +350,7 @@ export default function PurchaseOrdersPage() {
                       fontSize: 13,
                     }}
                   >
-                    <option value={0}>Select product...</option>
+                    <option value={0}>{'\u9009\u62e9\u4ea7\u54c1...'}</option>
                     {products.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.sku} - {p.name}
@@ -364,7 +364,7 @@ export default function PurchaseOrdersPage() {
                     onChange={(e) =>
                       updateItem(idx, 'quantity', parseInt(e.target.value) || 1)
                     }
-                    placeholder="Qty"
+                    placeholder={'\u6570\u91cf'}
                     style={{
                       padding: '8px 12px',
                       border: '1px solid #e2e8f0',
@@ -387,16 +387,16 @@ export default function PurchaseOrdersPage() {
               ))}
               {items.length === 0 && (
                 <p style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center', padding: 16 }}>
-                  No items added. Click &quot;Add Item&quot; to add products.
+                  {'\u6682\u672a\u6dfb\u52a0\u4ea7\u54c1\u3002\u70b9\u51fb\u201c\u6dfb\u52a0\u4ea7\u54c1\u201d\u5f00\u59cb\u3002'}
                 </p>
               )}
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
-                Cancel
+                {'\u53d6\u6d88'}
               </button>
               <button className="btn btn-primary" onClick={handleCreate} disabled={saving}>
-                {saving ? 'Creating...' : 'Create PO'}
+                {saving ? '\u521b\u5efa\u4e2d...' : '\u521b\u5efa PO'}
               </button>
             </div>
           </div>

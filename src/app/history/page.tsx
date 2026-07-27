@@ -68,27 +68,27 @@ export default function HistoryPage() {
 
   const chartData = data?.trends.map((t) => ({
     period: t.period,
-    Sales: +t.sales.toFixed(2),
-    Profit: +t.profit.toFixed(2),
-    Cost: +t.cost.toFixed(2),
-    Orders: t.order_count,
+    '\u9500\u552e\u989d': +t.sales.toFixed(2),
+    '\u5229\u6da6': +t.profit.toFixed(2),
+    '\u6210\u672c': +t.cost.toFixed(2),
+    '\u8ba2\u5355\u6570': t.order_count,
   })) || [];
 
   return (
     <div>
       <div className="page-header">
-        <h2>Historical Analysis</h2>
-        <p>Analyze sales trends over time with customizable date ranges</p>
+        <h2>{'\u5386\u53f2\u5206\u6790'}</h2>
+        <p>{'\u6309\u65e5\u671f\u6bb5\u7edf\u8ba1\u9500\u552e\u8d8b\u52bf\uff0c\u652f\u6301\u81ea\u5b9a\u4e49\u65f6\u95f4\u8303\u56f4'}</p>
       </div>
 
       <div className="toolbar">
-        <label style={{ fontSize: 13, color: '#64748b' }}>From:</label>
+        <label style={{ fontSize: 13, color: '#64748b' }}>{'\u5f00\u59cb:'}</label>
         <input
           type="date"
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
         />
-        <label style={{ fontSize: 13, color: '#64748b' }}>To:</label>
+        <label style={{ fontSize: 13, color: '#64748b' }}>{'\u7ed3\u675f:'}</label>
         <input
           type="date"
           value={endDate}
@@ -98,47 +98,47 @@ export default function HistoryPage() {
           value={dimension}
           onChange={(e) => setDimension(e.target.value)}
         >
-          <option value="day">Daily</option>
-          <option value="week">Weekly</option>
-          <option value="month">Monthly</option>
+          <option value="day">{'\u6309\u65e5'}</option>
+          <option value="week">{'\u6309\u5468'}</option>
+          <option value="month">{'\u6309\u6708'}</option>
         </select>
         <select
           value={chartType}
           onChange={(e) => setChartType(e.target.value as 'line' | 'bar')}
         >
-          <option value="line">Line Chart</option>
-          <option value="bar">Bar Chart</option>
+          <option value="line">{'\u6298\u7ebf\u56fe'}</option>
+          <option value="bar">{'\u67f1\u72b6\u56fe'}</option>
         </select>
         <button className="btn btn-primary btn-sm" onClick={fetchData}>
-          Apply
+          {'\u5e94\u7528'}
         </button>
       </div>
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: 60, color: '#94a3b8' }}>
-          Loading...
+          {'\u52a0\u8f7d\u4e2d...'}
         </div>
       ) : data ? (
         <>
           <div className="stat-grid">
             <div className="stat-card">
-              <div className="stat-label">Total Orders</div>
+              <div className="stat-label">{'\u603b\u8ba2\u5355\u6570'}</div>
               <div className="stat-value">
                 {data.summary.total_orders.toLocaleString()}
               </div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Total Quantity Sold</div>
+              <div className="stat-label">{'\u603b\u9500\u91cf'}</div>
               <div className="stat-value">
                 {data.summary.total_quantity.toLocaleString()}
               </div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Total Sales</div>
+              <div className="stat-label">{'\u603b\u9500\u552e\u989d'}</div>
               <div className="stat-value">{formatZAR(data.summary.total_sales)}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Total Profit</div>
+              <div className="stat-label">{'\u603b\u5229\u6da6'}</div>
               <div
                 className={`stat-value ${data.summary.total_profit >= 0 ? 'profit' : 'loss'}`}
               >
@@ -156,7 +156,7 @@ export default function HistoryPage() {
                 color: '#0f172a',
               }}
             >
-              Sales & Profit Trend
+              {'\u9500\u552e\u4e0e\u5229\u6da6\u8d8b\u52bf'}
             </h3>
             <ResponsiveContainer width="100%" height={350}>
               {chartType === 'line' ? (
@@ -179,21 +179,21 @@ export default function HistoryPage() {
                   <Legend />
                   <Line
                     type="monotone"
-                    dataKey="Sales"
+                    dataKey={'\u9500\u552e\u989d'}
                     stroke="#3b82f6"
                     strokeWidth={2}
                     dot={false}
                   />
                   <Line
                     type="monotone"
-                    dataKey="Profit"
+                    dataKey={'\u5229\u6da6'}
                     stroke="#16a34a"
                     strokeWidth={2}
                     dot={false}
                   />
                   <Line
                     type="monotone"
-                    dataKey="Cost"
+                    dataKey={'\u6210\u672c'}
                     stroke="#f59e0b"
                     strokeWidth={2}
                     dot={false}
@@ -218,9 +218,9 @@ export default function HistoryPage() {
                     }}
                   />
                   <Legend />
-                  <Bar dataKey="Sales" fill="#3b82f6" radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="Profit" fill="#16a34a" radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="Cost" fill="#f59e0b" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey={'\u9500\u552e\u989d'} fill="#3b82f6" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey={'\u5229\u6da6'} fill="#16a34a" radius={[2, 2, 0, 0]} />
+                  <Bar dataKey={'\u6210\u672c'} fill="#f59e0b" radius={[2, 2, 0, 0]} />
                 </BarChart>
               )}
             </ResponsiveContainer>
@@ -228,19 +228,19 @@ export default function HistoryPage() {
 
           <div className="card">
             <div className="card-header">
-              <h3>Period Details</h3>
+              <h3>{'\u5468\u671f\u660e\u7ec6'}</h3>
             </div>
             <div style={{ overflowX: 'auto' }}>
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Period</th>
-                    <th>Orders</th>
-                    <th>Quantity</th>
-                    <th>Sales (ZAR)</th>
-                    <th>Cost (ZAR)</th>
-                    <th>Commission (ZAR)</th>
-                    <th>Profit (ZAR)</th>
+                    <th>{'\u65f6\u95f4'}</th>
+                    <th>{'\u8ba2\u5355\u6570'}</th>
+                    <th>{'\u6570\u91cf'}</th>
+                    <th>{'\u9500\u552e\u989d (ZAR)'}</th>
+                    <th>{'\u6210\u672c (ZAR)'}</th>
+                    <th>{'\u4f63\u91d1 (ZAR)'}</th>
+                    <th>{'\u5229\u6da6 (ZAR)'}</th>
                   </tr>
                 </thead>
                 <tbody>

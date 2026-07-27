@@ -95,11 +95,20 @@ function seed(): void {
     }
   }
 
+  // Insert store auth records
+  const insertStoreAuth = db.prepare(`
+    INSERT INTO store_auth (store_name, api_key, api_secret, access_token, auth_status, last_sync_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `);
+  insertStoreAuth.run('Takealot Main', 'tak_seller_key_main_2025', 'secret_main_abc123', 'tok_main_xyz789', 'connected', '2026-05-10 08:30:00');
+  insertStoreAuth.run('Takealot Express', 'tak_seller_key_express_2025', 'secret_express_def456', '', 'disconnected', '');
+
   console.log('Database seeded successfully!');
   console.log(`  - ${stores.length} stores`);
   console.log(`  - ${products.length} products`);
   console.log(`  - ${orderIdx} orders`);
   console.log(`  - ${poData.length} purchase orders`);
+  console.log('  - 2 store auth records');
 }
 
 seed();

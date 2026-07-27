@@ -81,7 +81,7 @@ export default function ProductsPage() {
 
   const handleSave = async () => {
     if (!form.sku || !form.name) {
-      setError('SKU and Name are required');
+      setError('SKU \u548c\u540d\u79f0\u4e3a\u5fc5\u586b\u9879');
       return;
     }
     setSaving(true);
@@ -97,7 +97,7 @@ export default function ProductsPage() {
         takealot_product_id: form.takealot_product_id,
       };
 
-      const url = editingId ? '/api/products' : '/api/products';
+      const url = '/api/products';
       const method = editingId ? 'PUT' : 'POST';
       const res = await fetch(url, {
         method,
@@ -106,20 +106,20 @@ export default function ProductsPage() {
       });
       const json = await res.json();
       if (!res.ok) {
-        setError(json.error || 'Failed to save');
+        setError(json.error || '\u4fdd\u5b58\u5931\u8d25');
         return;
       }
       setShowModal(false);
       fetchProducts();
     } catch {
-      setError('Network error');
+      setError('\u7f51\u7edc\u9519\u8bef');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this product?')) return;
+    if (!confirm('\u786e\u5b9a\u8981\u5220\u9664\u8be5\u4ea7\u54c1\u5417\uff1f')) return;
     try {
       await fetch(`/api/products?id=${id}`, { method: 'DELETE' });
       fetchProducts();
@@ -131,8 +131,8 @@ export default function ProductsPage() {
   return (
     <div>
       <div className="page-header">
-        <h2>Product Management</h2>
-        <p>Manage your product catalog and Takealot store matching</p>
+        <h2>{'\u4ea7\u54c1\u7ba1\u7406'}</h2>
+        <p>{'\u7ba1\u7406\u4ea7\u54c1\u76ee\u5f55\u53ca Takealot \u5e97\u94fa\u4ea7\u54c1\u5339\u914d'}</p>
       </div>
 
       <div className="toolbar">
@@ -149,25 +149,25 @@ export default function ProductsPage() {
           />
           <input
             type="text"
-            placeholder="Search by SKU or name..."
+            placeholder={'\u6309 SKU \u6216\u540d\u79f0\u641c\u7d22...'}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{ paddingLeft: 32, width: 260 }}
           />
         </div>
         <span style={{ fontSize: 12, color: '#64748b' }}>
-          {total} products
+          {'\u5171'} {total} {'\u4e2a\u4ea7\u54c1'}
         </span>
         <div style={{ flex: 1 }} />
         <button className="btn btn-primary" onClick={openCreate}>
           <Plus size={14} />
-          New Product
+          {'\u65b0\u5efa\u4ea7\u54c1'}
         </button>
       </div>
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: 60, color: '#94a3b8' }}>
-          Loading...
+          {'\u52a0\u8f7d\u4e2d...'}
         </div>
       ) : (
         <div className="card">
@@ -176,12 +176,12 @@ export default function ProductsPage() {
               <thead>
                 <tr>
                   <th>SKU</th>
-                  <th>Product Name</th>
-                  <th>Cost Price</th>
-                  <th>Selling Price</th>
-                  <th>Margin</th>
+                  <th>{'\u4ea7\u54c1\u540d\u79f0'}</th>
+                  <th>{'\u6210\u672c\u4ef7'}</th>
+                  <th>{'\u552e\u4ef7'}</th>
+                  <th>{'\u5229\u6da6\u7387'}</th>
                   <th>Takealot ID</th>
-                  <th>Actions</th>
+                  <th>{'\u64cd\u4f5c'}</th>
                 </tr>
               </thead>
               <tbody>
@@ -224,7 +224,7 @@ export default function ProductsPage() {
                           </span>
                         ) : (
                           <span style={{ color: '#94a3b8', fontSize: 12 }}>
-                            Not linked
+                            {'\u672a\u5173\u8054'}
                           </span>
                         )}
                       </td>
@@ -257,7 +257,7 @@ export default function ProductsPage() {
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>{editingId ? 'Edit Product' : 'New Product'}</h3>
+              <h3>{editingId ? '\u7f16\u8f91\u4ea7\u54c1' : '\u65b0\u5efa\u4ea7\u54c1'}</h3>
               <button
                 onClick={() => setShowModal(false)}
                 style={{
@@ -291,20 +291,20 @@ export default function ProductsPage() {
                 <input
                   value={form.sku}
                   onChange={(e) => setForm({ ...form, sku: e.target.value })}
-                  placeholder="e.g. TK-EL-001"
+                  placeholder={'\u4f8b\u5982 TK-EL-001'}
                 />
               </div>
               <div className="form-group">
-                <label>Product Name *</label>
+                <label>{'\u4ea7\u54c1\u540d\u79f0 *'}</label>
                 <input
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="Product name"
+                  placeholder={'\u4ea7\u54c1\u540d\u79f0'}
                 />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div className="form-group">
-                  <label>Cost Price (ZAR)</label>
+                  <label>{'\u6210\u672c\u4ef7 (ZAR)'}</label>
                   <input
                     type="number"
                     step="0.01"
@@ -316,7 +316,7 @@ export default function ProductsPage() {
                   />
                 </div>
                 <div className="form-group">
-                  <label>Selling Price (ZAR)</label>
+                  <label>{'\u552e\u4ef7 (ZAR)'}</label>
                   <input
                     type="number"
                     step="0.01"
@@ -329,7 +329,7 @@ export default function ProductsPage() {
                 </div>
               </div>
               <div className="form-group">
-                <label>Image URL</label>
+                <label>{'\u56fe\u7247 URL'}</label>
                 <input
                   value={form.image_url}
                   onChange={(e) =>
@@ -339,13 +339,13 @@ export default function ProductsPage() {
                 />
               </div>
               <div className="form-group">
-                <label>Takealot Product ID</label>
+                <label>Takealot {'\u4ea7\u54c1 ID'}</label>
                 <input
                   value={form.takealot_product_id}
                   onChange={(e) =>
                     setForm({ ...form, takealot_product_id: e.target.value })
                   }
-                  placeholder="e.g. TL-10234"
+                  placeholder={'\u4f8b\u5982 TL-10234'}
                 />
               </div>
             </div>
@@ -354,14 +354,14 @@ export default function ProductsPage() {
                 className="btn btn-secondary"
                 onClick={() => setShowModal(false)}
               >
-                Cancel
+                {'\u53d6\u6d88'}
               </button>
               <button
                 className="btn btn-primary"
                 onClick={handleSave}
                 disabled={saving}
               >
-                {saving ? 'Saving...' : editingId ? 'Update' : 'Create'}
+                {saving ? '\u4fdd\u5b58\u4e2d...' : editingId ? '\u66f4\u65b0' : '\u521b\u5efa'}
               </button>
             </div>
           </div>

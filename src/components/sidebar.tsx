@@ -8,14 +8,16 @@ import {
   ShoppingCart,
   Package,
   FileText,
+  KeyRound,
 } from 'lucide-react';
 
 const navItems = [
-  { href: '/dashboard', label: 'Profit Analysis', icon: LayoutDashboard },
-  { href: '/history', label: 'Historical Analysis', icon: BarChart3 },
-  { href: '/orders', label: 'Order Management', icon: ShoppingCart },
-  { href: '/products', label: 'Product Management', icon: Package },
-  { href: '/purchase-orders', label: 'PO Management', icon: FileText },
+  { href: '/dashboard', label: '\u5229\u6da6\u5206\u6790', icon: LayoutDashboard },
+  { href: '/history', label: '\u5386\u53f2\u5206\u6790', icon: BarChart3 },
+  { href: '/orders', label: '\u8ba2\u5355\u7ba1\u7406', icon: ShoppingCart },
+  { href: '/products', label: '\u4ea7\u54c1\u7ba1\u7406', icon: Package },
+  { href: '/purchase-orders', label: 'PO \u5efa\u5355', icon: FileText },
+  { href: '/store-auth', label: '\u5e97\u94fa\u6388\u6743', icon: KeyRound },
 ];
 
 export default function Sidebar() {
@@ -69,7 +71,7 @@ export default function Sidebar() {
           color: '#475569',
         }}
       >
-        Currency: ZAR (R)
+        \u8d27\u5e01: ZAR (R)
       </div>
     </aside>
   );

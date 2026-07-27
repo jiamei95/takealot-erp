@@ -21,6 +21,13 @@ interface Order {
   store_name: string;
 }
 
+const statusLabels: Record<string, string> = {
+  completed: '\u5df2\u5b8c\u6210',
+  shipped: '\u5df2\u53d1\u8d27',
+  pending: '\u5f85\u5904\u7406',
+  cancelled: '\u5df2\u53d6\u6d88',
+};
+
 function formatZAR(amount: number): string {
   return `R ${amount.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
@@ -73,8 +80,8 @@ export default function OrdersPage() {
   return (
     <div>
       <div className="page-header">
-        <h2>Order Management</h2>
-        <p>View and manage all Takealot platform orders</p>
+        <h2>{'\u8ba2\u5355\u7ba1\u7406'}</h2>
+        <p>{'\u67e5\u770b\u548c\u7ba1\u7406\u6240\u6709 Takealot \u5e73\u53f0\u8ba2\u5355'}</p>
       </div>
 
       <div className="toolbar">
@@ -91,7 +98,7 @@ export default function OrdersPage() {
           />
           <input
             type="text"
-            placeholder="Search order # or product..."
+            placeholder={'\u641c\u7d22\u8ba2\u5355\u53f7\u6216\u4ea7\u54c1\u540d...'}
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -107,11 +114,11 @@ export default function OrdersPage() {
             setPage(1);
           }}
         >
-          <option value="">All Status</option>
-          <option value="completed">Completed</option>
-          <option value="shipped">Shipped</option>
-          <option value="pending">Pending</option>
-          <option value="cancelled">Cancelled</option>
+          <option value="">{'\u6240\u6709\u72b6\u6001'}</option>
+          <option value="completed">{'\u5df2\u5b8c\u6210'}</option>
+          <option value="shipped">{'\u5df2\u53d1\u8d27'}</option>
+          <option value="pending">{'\u5f85\u5904\u7406'}</option>
+          <option value="cancelled">{'\u5df2\u53d6\u6d88'}</option>
         </select>
         <select
           value={store}
@@ -120,7 +127,7 @@ export default function OrdersPage() {
             setPage(1);
           }}
         >
-          <option value="">All Stores</option>
+          <option value="">{'\u6240\u6709\u5e97\u94fa'}</option>
           {stores.map((s) => (
             <option key={s} value={s}>
               {s}
@@ -128,13 +135,13 @@ export default function OrdersPage() {
           ))}
         </select>
         <span style={{ fontSize: 12, color: '#64748b' }}>
-          {total} orders found
+          {'\u5171'} {total} {'\u4e2a\u8ba2\u5355'}
         </span>
       </div>
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: 60, color: '#94a3b8' }}>
-          Loading...
+          {'\u52a0\u8f7d\u4e2d...'}
         </div>
       ) : (
         <div className="card">
@@ -142,20 +149,20 @@ export default function OrdersPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Order #</th>
-                  <th>Date</th>
-                  <th>Product</th>
+                  <th>{'\u8ba2\u5355\u53f7'}</th>
+                  <th>{'\u4e0b\u5355\u65f6\u95f4'}</th>
+                  <th>{'\u4ea7\u54c1'}</th>
                   <th>SKU</th>
-                  <th>Qty</th>
-                  <th>Sell Price</th>
-                  <th>Cost</th>
-                  <th>Commission</th>
-                  <th>Pay Fee</th>
-                  <th>Storage</th>
-                  <th>Other</th>
-                  <th>Profit</th>
-                  <th>Status</th>
-                  <th>Store</th>
+                  <th>{'\u6570\u91cf'}</th>
+                  <th>{'\u552e\u4ef7'}</th>
+                  <th>{'\u6210\u672c'}</th>
+                  <th>{'\u5e73\u53f0\u4f63\u91d1'}</th>
+                  <th>{'\u652f\u4ed8\u624b\u7eed\u8d39'}</th>
+                  <th>{'\u4ed3\u50a8\u8d39'}</th>
+                  <th>{'\u5176\u4ed6'}</th>
+                  <th>{'\u5229\u6da6'}</th>
+                  <th>{'\u72b6\u6001'}</th>
+                  <th>{'\u5e97\u94fa'}</th>
                 </tr>
               </thead>
               <tbody>
@@ -180,7 +187,9 @@ export default function OrdersPage() {
                       {formatZAR(o.profit)}
                     </td>
                     <td>
-                      <span className={`badge badge-${o.status}`}>{o.status}</span>
+                      <span className={`badge badge-${o.status}`}>
+                        {statusLabels[o.status] || o.status}
+                      </span>
                     </td>
                     <td style={{ fontSize: 12, color: '#64748b' }}>{o.store_name}</td>
                   </tr>
@@ -200,7 +209,7 @@ export default function OrdersPage() {
               }}
             >
               <span style={{ fontSize: 12, color: '#64748b' }}>
-                Page {page} of {totalPages}
+                {'\u7b2c'} {page} {'\u9875 / \u5171'} {totalPages} {'\u9875'}
               </span>
               <div style={{ display: 'flex', gap: 4 }}>
                 <button
@@ -208,14 +217,14 @@ export default function OrdersPage() {
                   disabled={page <= 1}
                   onClick={() => setPage((p) => p - 1)}
                 >
-                  Previous
+                  {'\u4e0a\u4e00\u9875'}
                 </button>
                 <button
                   className="btn btn-secondary btn-sm"
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => p + 1)}
                 >
-                  Next
+                  {'\u4e0b\u4e00\u9875'}
                 </button>
               </div>
             </div>

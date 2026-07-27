@@ -63,8 +63,8 @@ export default function DashboardPage() {
   return (
     <div>
       <div className="page-header">
-        <h2>Profit Analysis</h2>
-        <p>Overview of your Takealot store performance and profitability</p>
+        <h2>{'\u5229\u6da6\u5206\u6790'}</h2>
+        <p>{'\u67e5\u770b\u60a8\u7684 Takealot \u5e97\u94fa\u8fd0\u8425\u4e0e\u76c8\u5229\u6982\u51b5'}</p>
       </div>
 
       <div className="toolbar">
@@ -72,7 +72,7 @@ export default function DashboardPage() {
           value={selectedStore}
           onChange={(e) => setSelectedStore(e.target.value)}
         >
-          <option value="">All Stores</option>
+          <option value="">{'\u6240\u6709\u5e97\u94fa'}</option>
           {stores.map((s) => (
             <option key={s.id} value={s.name}>
               {s.name}
@@ -80,13 +80,13 @@ export default function DashboardPage() {
           ))}
         </select>
         <button className="btn btn-secondary btn-sm" onClick={fetchData}>
-          Refresh
+          {'\u5237\u65b0'}
         </button>
       </div>
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: 60, color: '#94a3b8' }}>
-          Loading...
+          {'\u52a0\u8f7d\u4e2d...'}
         </div>
       ) : data ? (
         <>
@@ -94,56 +94,56 @@ export default function DashboardPage() {
             <div className="stat-card">
               <div className="stat-label">
                 <ShoppingBag size={14} style={{ display: 'inline', marginRight: 4 }} />
-                Total Orders
+                {'\u603b\u8ba2\u5355\u6570'}
               </div>
               <div className="stat-value">{data.total_orders.toLocaleString()}</div>
-              <div className="stat-sub">All non-cancelled orders</div>
+              <div className="stat-sub">{'\u6240\u6709\u975e\u53d6\u6d88\u8ba2\u5355'}</div>
             </div>
             <div className="stat-card">
               <div className="stat-label">
                 <DollarSign size={14} style={{ display: 'inline', marginRight: 4 }} />
-                Total Sales
+                {'\u603b\u9500\u552e\u989d'}
               </div>
               <div className="stat-value">{formatZAR(data.total_sales)}</div>
-              <div className="stat-sub">Gross revenue (ZAR)</div>
+              <div className="stat-sub">{'\u603b\u8425\u6536 (ZAR)'}</div>
             </div>
             <div className="stat-card">
               <div className="stat-label">
                 <TrendingUp size={14} style={{ display: 'inline', marginRight: 4 }} />
-                Total Profit
+                {'\u603b\u5229\u6da6'}
               </div>
               <div className={`stat-value ${data.total_profit >= 0 ? 'profit' : 'loss'}`}>
                 {formatZAR(data.total_profit)}
               </div>
-              <div className="stat-sub">After all deductions</div>
+              <div className="stat-sub">{'\u6263\u9664\u6240\u6709\u8d39\u7528\u540e'}</div>
             </div>
             <div className="stat-card">
               <div className="stat-label">
                 <Percent size={14} style={{ display: 'inline', marginRight: 4 }} />
-                Profit Margin
+                {'\u5229\u6da6\u7387'}
               </div>
               <div className={`stat-value ${data.profit_margin >= 0 ? 'profit' : 'loss'}`}>
                 {data.profit_margin}%
               </div>
-              <div className="stat-sub">Profit / Revenue ratio</div>
+              <div className="stat-sub">{'\u5229\u6da6 / \u8425\u6536 \u6bd4\u4f8b'}</div>
             </div>
           </div>
 
           <div className="stat-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
             <div className="stat-card">
-              <div className="stat-label">Platform Commission</div>
+              <div className="stat-label">{'\u5e73\u53f0\u4f63\u91d1'}</div>
               <div className="stat-value" style={{ fontSize: 20 }}>
                 {formatZAR(data.total_commission)}
               </div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Payment Fees</div>
+              <div className="stat-label">{'\u652f\u4ed8\u624b\u7eed\u8d39'}</div>
               <div className="stat-value" style={{ fontSize: 20 }}>
                 {formatZAR(data.total_payment_fees)}
               </div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Storage Fees</div>
+              <div className="stat-label">{'\u4ed3\u50a8\u8d39'}</div>
               <div className="stat-value" style={{ fontSize: 20 }}>
                 {formatZAR(data.total_storage_fees)}
               </div>
@@ -152,16 +152,16 @@ export default function DashboardPage() {
 
           <div className="card" style={{ marginTop: 24 }}>
             <div className="card-header">
-              <h3>Store Performance Breakdown</h3>
+              <h3>{'\u5e97\u94fa\u4e1a\u7ee9\u660e\u7ec6'}</h3>
             </div>
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Store Name</th>
-                  <th>Orders</th>
-                  <th>Sales (ZAR)</th>
-                  <th>Profit (ZAR)</th>
-                  <th>Margin</th>
+                  <th>{'\u5e97\u94fa\u540d\u79f0'}</th>
+                  <th>{'\u8ba2\u5355\u6570'}</th>
+                  <th>{'\u9500\u552e\u989d (ZAR)'}</th>
+                  <th>{'\u5229\u6da6 (ZAR)'}</th>
+                  <th>{'\u5229\u6da6\u7387'}</th>
                 </tr>
               </thead>
               <tbody>

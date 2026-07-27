@@ -78,5 +78,18 @@ function initSchema(db: Database.Database): void {
       FOREIGN KEY (po_id) REFERENCES purchase_orders(id) ON DELETE CASCADE,
       FOREIGN KEY (product_id) REFERENCES products(id)
     );
+
+    CREATE TABLE IF NOT EXISTS store_auth (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      store_name TEXT NOT NULL,
+      api_key TEXT NOT NULL DEFAULT '',
+      api_secret TEXT NOT NULL DEFAULT '',
+      access_token TEXT DEFAULT '',
+      token_expires_at TEXT DEFAULT '',
+      auth_status TEXT NOT NULL DEFAULT 'disconnected',
+      last_sync_at TEXT DEFAULT '',
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    );
   `);
 }
