@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Plus, Pencil, Trash2, Search, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, X, Package } from 'lucide-react';
 
 interface Product {
   id: number;
@@ -168,6 +168,23 @@ export default function ProductsPage() {
       {loading ? (
         <div style={{ textAlign: 'center', padding: 60, color: '#94a3b8' }}>
           {'\u52a0\u8f7d\u4e2d...'}
+        </div>
+      ) : products.length === 0 ? (
+        <div
+          style={{
+            textAlign: 'center',
+            padding: 60,
+            color: '#94a3b8',
+            background: '#fff',
+            borderRadius: 8,
+            border: '1px solid #e2e8f0',
+          }}
+        >
+          <Package size={40} style={{ marginBottom: 12, opacity: 0.4 }} />
+          <p>{'\u6682\u65e0\u4ea7\u54c1\u6570\u636e'}</p>
+          <p style={{ fontSize: 12, marginTop: 4 }}>
+            {'\u8bf7\u5148\u5728\u300c\u5e97\u94fa\u6388\u6743\u300d\u9875\u9762\u540c\u6b65 Takealot \u4ea7\u54c1\u6570\u636e\uff0c\u6216\u70b9\u51fb\u201c\u65b0\u5efa\u4ea7\u54c1\u201d\u624b\u52a8\u6dfb\u52a0'}
+          </p>
         </div>
       ) : (
         <div className="card">

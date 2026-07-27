@@ -7,7 +7,16 @@ const DB_PATH = path.join(process.cwd(), 'data', 'erp.db');
 let _db: Database.Database | null = null;
 
 export function getDb(): Database.Database {
-  if (_db) return _db;
+  if (_db) {
+    // Verify connection is still valid
+    try {
+      _db.prepare('SELECT 1').get();
+      return _db;
+    } catch {
+      // Connection is stale, reconnect
+      _db = null;
+    }
+  }
 
   const dir = path.dirname(DB_PATH);
   if (!fs.existsSync(dir)) {

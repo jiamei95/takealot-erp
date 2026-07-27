@@ -88,6 +88,23 @@ export default function DashboardPage() {
         <div style={{ textAlign: 'center', padding: 60, color: '#94a3b8' }}>
           {'\u52a0\u8f7d\u4e2d...'}
         </div>
+      ) : data && data.total_orders === 0 ? (
+        <div
+          style={{
+            textAlign: 'center',
+            padding: 60,
+            color: '#94a3b8',
+            background: '#fff',
+            borderRadius: 8,
+            border: '1px solid #e2e8f0',
+          }}
+        >
+          <ShoppingBag size={40} style={{ marginBottom: 12, opacity: 0.4 }} />
+          <p>{'\u6682\u65e0\u6570\u636e'}</p>
+          <p style={{ fontSize: 12, marginTop: 4 }}>
+            {'\u8bf7\u5148\u5728\u300c\u5e97\u94fa\u6388\u6743\u300d\u9875\u9762\u7ed1\u5b9a Takealot \u5e97\u94fa\u5e76\u540c\u6b65\u6570\u636e'}
+          </p>
+        </div>
       ) : data ? (
         <>
           <div className="stat-grid">
