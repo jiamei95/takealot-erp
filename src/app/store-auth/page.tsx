@@ -40,8 +40,10 @@ export default function StoreAuthPage() {
       const res = await fetch('/api/store-auth');
       const json = await res.json();
       setStores(json.store_auth);
-    } catch (err) {
+    } catch (err: any) {
+      const msg = err?.message || String(err);
       console.error('Failed to fetch store auth:', err);
+      setError(`加载店铺列表失败: ${msg}`);
     } finally {
       setLoading(false);
     }
@@ -93,8 +95,9 @@ export default function StoreAuthPage() {
       }
       setShowModal(false);
       fetchStores();
-    } catch {
-      setError('\u7f51\u7edc\u9519\u8bef');
+    } catch (err: any) {
+      const msg = err?.message || String(err);
+      setError(`网络错误: ${msg}`);
     } finally {
       setSaving(false);
     }
