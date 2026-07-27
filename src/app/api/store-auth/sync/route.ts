@@ -29,17 +29,9 @@ interface TakealotOrder {
 }
 
 function buildHeaders(auth: { api_key: string; api_secret: string; access_token: string }) {
-  // Takealot Seller API 支持两种认证方式：
-  // 1. 使用 Access Token（Bearer）
-  // 2. 使用 API Key 直接认证
-  if (auth.access_token) {
-    return {
-      'Authorization': `Bearer ${auth.access_token}`,
-      'Content-Type': 'application/json',
-    };
-  }
+  // Takealot 后台只提供 API Key，直接使用 API Key 作为 Bearer Token 认证
   return {
-    'Authorization': `Basic ${Buffer.from(`${auth.api_key}:${auth.api_secret}`).toString('base64')}`,
+    'Authorization': `Bearer ${auth.api_key}`,
     'Content-Type': 'application/json',
   };
 }
@@ -168,13 +160,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: '未找到该店铺授权信息' }, { status: 404 });
   }
 
-  // 检查是否有有效的认证凭据（至少需要 api_key + api_secret 或 access_token）
-  const hasKeyAndSecret = auth.api_key && auth.api_secret;
-  const hasToken = auth.access_token;
-
-  if (!hasKeyAndSecret && !hasToken) {
+  // Takealot 只需要 API Key 进行认证
+  if (!auth.api_key) {
     return NextResponse.json(
-      { error: 'API 凭据未配置。请编辑授权信息，填写 API Key + API Secret 或 Access Token' },
+      { error: 'API Key 未配置，请先编辑授权信息' },
       { status: 400 }
     );
   }

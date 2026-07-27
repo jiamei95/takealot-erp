@@ -29,12 +29,10 @@ export async function POST(request: Request) {
     );
   }
 
-  // 检查是否至少有一种认证方式
-  const hasKeyAndSecret = api_key && api_secret;
-  const hasToken = access_token;
-  if (!hasKeyAndSecret && !hasToken) {
+  // Takealot 只需要 API Key
+  if (!store_name || !api_key) {
     return NextResponse.json(
-      { error: '请至少填写 API Key + API Secret 或 Access Token' },
+      { error: '店铺名称和 API Key 为必填项' },
       { status: 400 }
     );
   }

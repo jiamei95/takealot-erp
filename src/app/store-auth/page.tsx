@@ -19,9 +19,6 @@ interface StoreAuth {
 const emptyForm = {
   store_name: '',
   api_key: '',
-  api_secret: '',
-  access_token: '',
-  token_expires_at: '',
 };
 
 export default function StoreAuthPage() {
@@ -63,9 +60,6 @@ export default function StoreAuthPage() {
     setForm({
       store_name: s.store_name,
       api_key: s.api_key,
-      api_secret: s.api_secret,
-      access_token: s.access_token,
-      token_expires_at: s.token_expires_at,
     });
     setEditingId(s.id);
     setError('');
@@ -77,10 +71,8 @@ export default function StoreAuthPage() {
       setError('店铺名称为必填项');
       return;
     }
-    const hasKeyAndSecret = form.api_key && form.api_secret;
-    const hasToken = form.access_token;
-    if (!hasKeyAndSecret && !hasToken) {
-      setError('请至少填写 API Key + API Secret 或 Access Token');
+    if (!form.api_key) {
+      setError('请填写 API Key');
       return;
     }
     setSaving(true);
@@ -173,12 +165,12 @@ export default function StoreAuthPage() {
             <p>{'\u8981\u8fde\u63a5 Takealot \u5b98\u65b9 API\uff0c\u60a8\u9700\u8981\uff1a'}</p>
             <ol style={{ paddingLeft: 20, margin: '8px 0' }}>
               <li>{'\u767b\u5f55 Takealot Seller Portal (seller.takealot.com)'}</li>
-              <li>{'\u8fdb\u5165 \u201c\u8bbe\u7f6e \u2192 API \u8bbf\u95ee\u201d \u9875\u9762'}</li>
-              <li>{'\u751f\u6210 API Key \u548c API Secret'}</li>
-              <li>{'\u5c06\u51ed\u636e\u586b\u5199\u5230\u4e0b\u65b9\u8868\u5355\u4e2d\u5b8c\u6210\u6388\u6743'}</li>
+              <li>{'\u8fdb\u5165 \u201c\u8bbe\u7f6e \u2192 API \u7ba1\u7406\u201d \u9875\u9762'}</li>
+              <li>{'\u590d\u5236\u60a8\u7684 API Key'}</li>
+              <li>{'\u5c06 API Key \u586b\u5199\u5230\u4e0b\u65b9\u8868\u5355\u4e2d\u5b8c\u6210\u6388\u6743'}</li>
             </ol>
             <p style={{ fontSize: 12, color: '#94a3b8' }}>
-              {'\u2139 \u6388\u6743\u540e\u7cfb\u7edf\u5c06\u81ea\u52a8\u83b7\u53d6 Access Token\uff0c\u5e76\u5b9a\u671f\u540c\u6b65\u4ea7\u54c1\u3001\u8ba2\u5355\u548c\u5e93\u5b58\u6570\u636e\u3002'}
+              {'\u2139 \u6388\u6743\u540e\u70b9\u51fb\u201c\u540c\u6b65\u6570\u636e\u201d\u5373\u53ef\u4ece Takealot \u62c9\u53d6\u4ea7\u54c1\u3001\u8ba2\u5355\u548c\u5e93\u5b58\u6570\u636e\u3002'}
             </p>
           </div>
         </div>
@@ -371,40 +363,15 @@ export default function StoreAuthPage() {
                 />
               </div>
               <div className="form-group">
-                <label>API Key <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 12 }}>（方式一：与 Secret 配合使用）</span></label>
+                <label>API Key *</label>
                 <input
                   value={form.api_key}
                   onChange={(e) => setForm({ ...form, api_key: e.target.value })}
-                  placeholder="从 Takealot Seller Portal 获取"
+                  placeholder="从 Takealot Seller Portal 获取 API Key"
                 />
-              </div>
-              <div className="form-group">
-                <label>API Secret <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 12 }}>（方式一）</span></label>
-                <input
-                  type="password"
-                  value={form.api_secret}
-                  onChange={(e) => setForm({ ...form, api_secret: e.target.value })}
-                  placeholder="从 Takealot Seller Portal 获取"
-                />
-              </div>
-              <div style={{ padding: '8px 12px', background: '#f1f5f9', borderRadius: 6, fontSize: 12, color: '#64748b', margin: '4px 0' }}>
-                方式一（API Key + Secret）和方式二（Access Token）二选一即可
-              </div>
-              <div className="form-group">
-                <label>Access Token <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 12 }}>（方式二：直接填写）</span></label>
-                <input
-                  value={form.access_token}
-                  onChange={(e) => setForm({ ...form, access_token: e.target.value })}
-                  placeholder="如有现成 Token 可直接填入"
-                />
-              </div>
-              <div className="form-group">
-                <label>Token {'\u8fc7\u671f\u65f6\u95f4 (\u53ef\u9009)'}</label>
-                <input
-                  type="datetime-local"
-                  value={form.token_expires_at}
-                  onChange={(e) => setForm({ ...form, token_expires_at: e.target.value })}
-                />
+                <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
+                  登录 Takealot Seller Portal → 设置 → API 管理中获取
+                </div>
               </div>
             </div>
             <div className="modal-footer">
