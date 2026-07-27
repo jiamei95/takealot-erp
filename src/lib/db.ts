@@ -5,9 +5,30 @@ import fs from 'fs';
 const DB_PATH = path.join(process.cwd(), 'data', 'erp.db');
 
 // 使用 globalThis 确保跨模块单例
-const globalForDb = globalThis as unknown as { _erp_db: Database.Database | undefined };
+const globalForDb = globalThis as unknown as {
+  _erp_db: Database.Database | undefined;
+  _erp_db_inode: number | undefined;
+};
+
+function getFileInode(): number | undefined {
+  try {
+    const stat = fs.statSync(DB_PATH);
+    return stat.ino;
+  } catch {
+    return undefined;
+  }
+}
 
 export function getDb(): Database.Database {
+  const currentInode = getFileInode();
+
+  // 如果文件 inode 变了（数据库被重建），必须重新连接
+  if (globalForDb._erp_db && globalForDb._erp_db_inode !== currentInode) {
+    try { globalForDb._erp_db.close(); } catch { /* ignore */ }
+    globalForDb._erp_db = undefined;
+    globalForDb._erp_db_inode = undefined;
+  }
+
   if (globalForDb._erp_db) {
     try {
       globalForDb._erp_db.prepare('SELECT 1').get();
@@ -15,6 +36,7 @@ export function getDb(): Database.Database {
     } catch {
       try { globalForDb._erp_db.close(); } catch { /* ignore */ }
       globalForDb._erp_db = undefined;
+      globalForDb._erp_db_inode = undefined;
     }
   }
 
@@ -29,6 +51,7 @@ export function getDb(): Database.Database {
 
   initSchema(db);
   globalForDb._erp_db = db;
+  globalForDb._erp_db_inode = currentInode ?? getFileInode();
   return db;
 }
 

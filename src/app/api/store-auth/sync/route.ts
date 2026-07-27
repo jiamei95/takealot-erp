@@ -1,17 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Database from 'better-sqlite3';
-import path from 'path';
+import { getDb } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
-
-// 直接创建数据库连接（避免跨模块缓存问题）
-function getSyncDb(): Database.Database {
-  const dbPath = path.join(process.cwd(), 'data', 'erp.db');
-  const db = new Database(dbPath);
-  db.pragma('journal_mode = WAL');
-  db.pragma('foreign_keys = ON');
-  return db;
-}
 
 // Takealot API 类型定义（灵活类型，兼容各种响应格式）
 interface TakealotOffer {
@@ -189,7 +179,7 @@ async function syncProducts(
     return { count: 0, error: '产品同步失败: /offers 返回数据为空（可能 API Key 无权限或字段名不匹配）' };
   }
 
-  const db = getSyncDb();
+  const db = getDb();
   let count = 0;
 
   for (const offer of offers) {
@@ -241,7 +231,7 @@ async function syncOrders(
     return { count: 0, error: '订单同步失败: /sales 返回数据为空（可能 API Key 无权限或字段名不匹配）' };
   }
 
-  const db = getSyncDb();
+  const db = getDb();
   let count = 0;
 
   for (const sale of sales) {
@@ -342,7 +332,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '缺少 store_id 参数' }, { status: 400 });
     }
 
-    const db = getSyncDb();
+    const db = getDb();
     const auth = db.prepare('SELECT * FROM store_auth WHERE id = ?').get(store_id) as
       { id: number; store_name: string; api_key: string; api_secret: string; api_base_url: string; access_token: string } | undefined;
 
