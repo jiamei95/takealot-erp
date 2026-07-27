@@ -38,8 +38,17 @@ export default function StoreAuthPage() {
     setLoading(true);
     try {
       const res = await fetch('/api/store-auth');
-      const json = await res.json();
-      setStores(json.store_auth);
+      const text = await res.text();
+      let json;
+      try {
+        json = text ? JSON.parse(text) : null;
+      } catch {
+        console.error('Invalid JSON response:', text);
+        return;
+      }
+      if (json?.store_auth) {
+        setStores(json.store_auth);
+      }
     } catch (err: any) {
       const msg = err?.message || String(err);
       console.error('Failed to fetch store auth:', err);
@@ -88,16 +97,31 @@ export default function StoreAuthPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
-      const json = await res.json();
+      
+      // Check if response has content before parsing
+      const text = await res.text();
+      let json;
+      try {
+        json = text ? JSON.parse(text) : null;
+      } catch {
+        throw new Error(`服务器返回了无效响应 (HTTP ${res.status})`);
+      }
+      
       if (!res.ok) {
-        setError(json.error || '\u4fdd\u5b58\u5931\u8d25');
+        setError(json?.error || `保存失败 (HTTP ${res.status})`);
         return;
       }
+      
+      if (!json) {
+        throw new Error('服务器返回了空响应');
+      }
+      
       setShowModal(false);
       fetchStores();
     } catch (err: any) {
       const msg = err?.message || String(err);
-      setError(`网络错误: ${msg}`);
+      setError(`请求失败: ${msg}`);
+      console.error('Save error:', err);
     } finally {
       setSaving(false);
     }
