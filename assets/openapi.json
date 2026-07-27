@@ -1,0 +1,3587 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "version": "1.0.0",
+    "title": "Takealot Marketplace API",
+    "summary": "A service for merchants to integrate with Takealot seller information.",
+    "description": "This API allows merchants to manage their seller information, offers, orders, returns, shipments, and more on the Takealot marketplace platform."
+  },
+  "servers": [
+    {
+      "url": "https://marketplace-api.takealot.com/v1",
+      "description": "Production API"
+    },
+    {
+      "url": "http://localhost:8000/v1",
+      "description": "Local dev and functional testing API"
+    }
+  ],
+  "security": [
+    {
+      "api_key": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Overview",
+      "description": "### Authorisation\n\nAll endpoints that deal with seller-specific information require an API key to be\nprovided in the `X-API-Key` header.\n\nObtain an API key:\n\n- Register for a Takealot Seller account if you don't already have one.\n\n- Log in as the account owner and navigate to the API Access section in the Seller Portal.\n\n- Generate a new API key and copy it for use in your API requests.\n\nCurrently, only one API key can be active at a time per seller account. If you\ngenerate a new API key, the previous one will be deactivated.\n\nThe API key has access to all the endpoints in this API, but only for the seller\naccount it is associated with. There are no separate permissions or scopes for\ndifferent endpoints.\n\n### Collection queries\n\nCollection endpoints support pagination and field selection to help manage large\ndatasets and optimize response sizes.\n\n- Use the `fields` query parameter to specify which fields you want included in\nthe response. This can help reduce the size of the response and improve\nperformance by only returning the data you need.\n\n- Use the `expands` query parameter to include related resources in the response.\nThis allows you to retrieve associated data in a single request, reducing the need\nfor multiple round-trips to the API.\n\n- Use the `limit` query parameter to specify the maximum number of items to return\nin a single response. If there are more items available than the specified limit,\na `continuation_token` will be included in the response that can be used to\nretrieve the next page of results.\n\n- Use the `include_count` query parameter set to `true` if you want the response\nto include a `count` field indicating the total number of items in the collection\nthat match the given query parameters. Note that including a count may impact\nperformance, especially for large datasets, as it may require an additional query\nto determine the total count.\n\n### Collection responses\n\nCollection reponses generally return the following:\n\n- A list of items in a field named `items`.\n\n- A `limit` field indicating the maximum number of items that could be returned in\nthe current response. This is determined by the `limit` query parameter provided\nin the request, or a default value if the parameter is not provided.\n\n- A `count` field indicating the total number of items in the collection with the\ngiven query parameters. This will only be included if the `include_count` query\nparameter is set to `true`.\n\n- A `continuation_token` field if there are more items in the collection that were\nnot included in the current response. This token can be used to retrieve the next\npage of results. See the Pagination section below for details.\n\n### Pagination\n\nIf the current result set is large and does not fit into the current response, the\nresponse will include a `continuation_token` in the body.\n\nUse this token in the `continuation_token` query parameter to retrieve the next page of results.\n\nAny other parameters provided together with a continuation token will be ignored.\n\nWhen a continuation token is provided in the request, the response will NOT include a count.\n\nWhen the end of the collection is reached, the continuation token will be omitted from the response.\n\n### Single item queries and responses\n\nSingle item endpoints generally return the item directly in the response body,\nwithout an additional nesting field. For example, a GET request to\n`/offers/{offer_id}` will return the offer object directly in the response body.\n\nif the requested item is not found, the API will return a 404 Not Found status\ncode with an empty response body.\n\nThe same `fields` and `expands` query parameters that are available for collection\nendpoints can also be used with single item endpoints to specify which fields and\nrelated resources should be included in the response.\n",
+      "x-traitTag": true
+    },
+    {
+      "name": "General",
+      "description": "General endpoints."
+    },
+    {
+      "name": "Offers",
+      "description": "The offers endpoints."
+    },
+    {
+      "name": "Sales",
+      "description": "The sales endpoints."
+    },
+    {
+      "name": "Transactions",
+      "description": "The transactions endpoints."
+    },
+    {
+      "name": "Shipments",
+      "description": "The shipments endpoints."
+    },
+    {
+      "name": "Returns",
+      "description": "The returns endpoints."
+    },
+    {
+      "name": "Facilities",
+      "description": "The facilities endpoints."
+    },
+    {
+      "name": "Seller",
+      "description": "The seller info endpoints."
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "api_key": {
+        "type": "apiKey",
+        "description": "The API key",
+        "name": "X-API-Key",
+        "in": "header"
+      }
+    },
+    "schemas": {
+      "OfferID": {
+        "type": "integer",
+        "description": "Unique identifier for the offer. Unique across all offers.",
+        "example": 123456,
+        "readOnly": true,
+        "format": "int32",
+        "minimum": 1
+      },
+      "DefaultError": {
+        "type": "object",
+        "description": "A default error response containing an error message.",
+        "required": [
+          "message"
+        ],
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "A human-readable message describing the error.",
+            "example": "An unexpected error occurred."
+          }
+        },
+        "additionalProperties": false
+      },
+      "TsinID": {
+        "type": "integer",
+        "description": "Unique identifier for the TSIN (Takealot Standard Item Number).",
+        "example": 23456789,
+        "readOnly": true,
+        "minimum": 1,
+        "format": "int32"
+      },
+      "SKU": {
+        "type": "string",
+        "minLength": 1,
+        "description": "SKU (Stock Keeping Unit) for the offer (provided by the merchant)",
+        "example": "SKU-ABC123"
+      },
+      "SellingPrice": {
+        "type": "integer",
+        "format": "int32",
+        "minimum": 0,
+        "description": "Selling Price in South African Rand.",
+        "example": 345
+      },
+      "RRP": {
+        "type": "integer",
+        "format": "int32",
+        "description": "RRP (Recommended Retail Price) in South African Rand.",
+        "minimum": 0,
+        "example": 399
+      },
+      "QuantityReturned30Days": {
+        "type": "integer",
+        "description": "The number of units that were returned within the last 30 days. This metric helps sellers track recent return trends and identify potential issues with their products or fulfillment processes.",
+        "example": 10,
+        "readOnly": true
+      },
+      "SellerWarehouseStock": {
+        "type": "object",
+        "description": "Stock information for an offer at a specific seller warehouse.",
+        "properties": {
+          "seller_warehouse_id": {
+            "type": "integer",
+            "description": "The ID of the seller's warehouse. Assigned by Takealot.",
+            "example": 1234,
+            "readOnly": true
+          },
+          "quantity_available": {
+            "type": "integer",
+            "description": "The quantity of stock that is available for purchase from this warehouse.",
+            "example": 100
+          }
+        }
+      },
+      "RegionEnum": {
+        "type": "string",
+        "description": "A Takealot region code. Regions represent geographic areas where Takealot operates warehouses and fulfillment centers.",
+        "example": "JHB",
+        "enum": [
+          "CPT",
+          "JHB",
+          "DBN"
+        ]
+      },
+      "TakealotRegionStock": {
+        "type": "object",
+        "description": "Stock information for an offer in a specific Takealot region.",
+        "properties": {
+          "region": {
+            "$ref": "#/components/schemas/RegionEnum",
+            "description": "The Takealot region code."
+          },
+          "quantity_available": {
+            "type": "integer",
+            "description": "The quantity of stock that is available for purchase in this region.",
+            "example": 100
+          },
+          "stock_on_way": {
+            "type": "integer",
+            "description": "Quantity of stock that is on its way to warehouses in this region.",
+            "example": 50
+          },
+          "stock_in_receiving": {
+            "type": "integer",
+            "description": "Quantity of stock that has been received, but not placed in inventory in this region.",
+            "example": 20
+          },
+          "stock_30_days_cover": {
+            "type": "integer",
+            "description": "Quantity of stock that can cover 30 days of sales in this region.",
+            "example": 100
+          },
+          "quantity_sold_30_days": {
+            "type": "integer",
+            "description": "Quantity of stock sold in the last 30 days in this region.",
+            "example": 80
+          }
+        }
+      },
+      "SuccessFee": {
+        "type": "number",
+        "format": "double",
+        "description": "Fee associated with the successful completion of a sale.",
+        "example": 5
+      },
+      "OfferCharges": {
+        "type": "object",
+        "description": "Charges associated with an offer, including various fees for different order types and cost breakdowns.",
+        "properties": {
+          "order_type": {
+            "type": "string",
+            "description": "The type of order these charges apply to.",
+            "enum": [
+              "in_stock",
+              "leadtime"
+            ],
+            "example": "in_stock"
+          },
+          "estimated_success_fee": {
+            "example": "in_stock",
+            "$ref": "#/components/schemas/SuccessFee",
+            "description": "Estimated fee associated with the successful completion of a sale of this offer."
+          },
+          "estimated_fulfilment_fee": {
+            "type": "number",
+            "format": "double",
+            "description": "Estimated fee charged for fulfilling the order when this offer is sold.",
+            "example": 25.5
+          },
+          "product_cost": {
+            "type": "number",
+            "format": "double",
+            "description": "The cost of the product.",
+            "example": 150
+          },
+          "estimated_shipping_cost": {
+            "type": "number",
+            "format": "double",
+            "description": "Estimated cost of shipping the offer when this offer is sold.",
+            "example": 45
+          },
+          "other_costs": {
+            "type": "number",
+            "format": "double",
+            "description": "Any additional costs associated with the order.",
+            "example": 5
+          }
+        }
+      },
+      "ReplenishmentBlock": {
+        "type": "object",
+        "description": "Information about replenishment blocks on an offer. A replenishment block prevents or limits the seller from sending more stock to Takealot warehouses.",
+        "properties": {
+          "region": {
+            "$ref": "#/components/schemas/RegionEnum",
+            "description": "The region where replenishment is blocked."
+          },
+          "is_replen_blocked": {
+            "type": "boolean",
+            "description": "Whether replenishment is currently blocked for this offer in the specified region.",
+            "example": true
+          },
+          "replen_block_max_qty": {
+            "type": "integer",
+            "description": "The maximum quantity that can be replenished for the offer in the specified region.",
+            "example": 50
+          },
+          "replen_block_reason": {
+            "type": "string",
+            "description": "The reason why replenishment is blocked or limited.",
+            "example": "Overstock in warehouse"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Offer": {
+        "type": "object",
+        "description": "An offer represents a specific product available for sale on the Takealot platform. Offers are uniquely identified by their offer_id and are associated with a specific TSIN and seller. It includes details such as pricing, stock availability, and other relevant information. Default responses will not include stock information unless explicitly requested.",
+        "properties": {
+          "offer_id": {
+            "$ref": "#/components/schemas/OfferID"
+          },
+          "tsin_id": {
+            "$ref": "#/components/schemas/TsinID"
+          },
+          "sku": {
+            "$ref": "#/components/schemas/SKU"
+          },
+          "barcode": {
+            "type": "string",
+            "description": "Barcode for the offer. Provided by the merchant. Defined on TSIN level.",
+            "example": "MPTALX12345678-9"
+          },
+          "product_label": {
+            "type": "string",
+            "description": "The takealot specific product label of the offer",
+            "example": "9902198765432"
+          },
+          "selling_price": {
+            "$ref": "#/components/schemas/SellingPrice"
+          },
+          "rrp": {
+            "$ref": "#/components/schemas/RRP"
+          },
+          "minimum_leadtime_days": {
+            "type": "integer",
+            "description": "Estimated minimum lead time in days for the offer to be available for shipping.",
+            "example": 3
+          },
+          "status": {
+            "type": "string",
+            "description": "Status of the offer.\n\n- `buyable`: The offer is available for purchase.\n- `not_buyable`: The offer is not available for purchase.\n- `disabled_by_seller`: The offer has been disabled by the seller.\n- `disabled_by_takealot`: The offer has been disabled by Takealot.\n",
+            "enum": [
+              "buyable",
+              "not_buyable",
+              "disabled_by_seller",
+              "disabled_by_takealot"
+            ],
+            "example": "buyable",
+            "readOnly": true
+          },
+          "title": {
+            "type": "string",
+            "description": "Title of the offer. Defined on TSIN level.",
+            "readOnly": true,
+            "example": "Apple iPhone 13 Pro Max (256GB) - Silver"
+          },
+          "discount_percentage": {
+            "type": "number",
+            "description": "Discount percentage.\n\nFor example, a value of 15.5 indicates a 15.5% discount.\n\nThe discount percentage is calculated as:\n`((RRP - Selling Price) / RRP) * 100`\n\nDiscounts of 11% or more are typically highlighted on the Takealot platform.\n",
+            "format": "float",
+            "example": 15.5,
+            "readOnly": true
+          },
+          "storage_fee_eligible": {
+            "type": "boolean",
+            "description": "Whether the offer is eligible for storage fees.",
+            "example": true,
+            "readOnly": true
+          },
+          "created_at": {
+            "type": "string",
+            "description": "The date and time when the offer was created, in ISO 8601 format.",
+            "example": "2024-01-15T12:34:56+02:00",
+            "readOnly": true
+          },
+          "updated_at": {
+            "type": "string",
+            "description": "The date and time when the offer was last updated, in ISO 8601 format.\nNote: This field may not always reflect the most recent changes, as some updates might not trigger a timestamp update.\n",
+            "example": "2025-01-15T12:34:56+02:00",
+            "readOnly": true
+          },
+          "affected_by_vacation": {
+            "type": "boolean",
+            "description": "Whether the offer is affected by vacation.\n\nAn offer is considered affected by vacation if the seller has set a vacation\nperiod during which the offer will not be available for purchase on leadtime.",
+            "example": false,
+            "readOnly": true
+          },
+          "disabled_by_seller": {
+            "type": "boolean",
+            "description": "Whether the offer is disabled by the seller.",
+            "example": false
+          },
+          "disabled_by_takealot": {
+            "type": "boolean",
+            "description": "Whether the offer is disabled by Takealot.",
+            "example": false,
+            "readOnly": true
+          },
+          "conversion_percentage_30_days": {
+            "type": "number",
+            "description": "Conversion percentage over the last 30 days.",
+            "readOnly": true,
+            "example": 12.5
+          },
+          "conversion_percentage_previous_30_days": {
+            "type": "number",
+            "description": "Conversion percentage over the previous 30 days.",
+            "readOnly": true,
+            "example": 10.2
+          },
+          "page_views_30_days": {
+            "type": "integer",
+            "description": "Number of page views over the last 30 days.",
+            "readOnly": true,
+            "example": 1500
+          },
+          "quantity_returned_30_days": {
+            "$ref": "#/components/schemas/QuantityReturned30Days"
+          },
+          "condition": {
+            "type": "string",
+            "description": "The condition of the offer.",
+            "readOnly": true,
+            "example": "New"
+          },
+          "image_url": {
+            "type": "string",
+            "description": "URL of the offer's cover image.",
+            "readOnly": true,
+            "example": "https://images.example.com/images/sellers/12345/offer/67890/image.jpg"
+          },
+          "productline_id": {
+            "type": "integer",
+            "description": "The product line ID associated with the offer.\n\nThis is a unique identifier for the product line that the offer belongs to. It can\nbe used to group offers that are variations of the same product, such as different\ncolors or sizes.\n\nThis can be used to construct a link to the product on Takealot. The Takealot page\nurl is typically structured as follows:\n\n`https://www.takealot.com/x/PLID{productline_id}`",
+            "example": 98765,
+            "readOnly": true
+          },
+          "width_cm": {
+            "type": "number",
+            "description": "Width of the product in centimeters.",
+            "format": "float",
+            "readOnly": true,
+            "example": 15.5
+          },
+          "length_cm": {
+            "type": "number",
+            "description": "Length of the product in centimeters.",
+            "format": "float",
+            "readOnly": true,
+            "example": 25.1
+          },
+          "height_cm": {
+            "type": "number",
+            "description": "Height of the product in centimeters.",
+            "format": "float",
+            "readOnly": true,
+            "example": 10.2
+          },
+          "weight_grams": {
+            "type": "number",
+            "description": "Weight of the product in grams.",
+            "format": "float",
+            "readOnly": true,
+            "example": 345.8
+          },
+          "is_conveyable": {
+            "type": "boolean",
+            "description": "Whether the product is conveyable (Fits on a standard conveyor belt).",
+            "example": true,
+            "readOnly": true
+          },
+          "benchmark_price": {
+            "type": "integer",
+            "description": "The benchmark price for the offer. This is the price at which the offer\nhas been most commonly listed or sold on the Takealot platform over a certain\nperiod of time. It can provide insights into the typical pricing for the offer and\nhelp sellers understand market trends.\n\nThe benchmark price is calculated based on historical pricing data and may not\nalways reflect the current selling price of the offer.\n\nThis is also shown on the Takealot platform as the strikethrough price.",
+            "example": 1499,
+            "readOnly": true
+          },
+          "total_wishlist": {
+            "type": "integer",
+            "description": "Total number of wishlists containing the offer.",
+            "example": 250,
+            "readOnly": true
+          },
+          "wishlist_30_days": {
+            "type": "integer",
+            "description": "Number of wishlists containing the offer in the last 30 days.",
+            "example": 159,
+            "readOnly": true
+          },
+          "listing_quality": {
+            "type": "integer",
+            "description": "Listing quality score of the offer. Also known as the catalogue quality score.\n\nThis is an indicator of how well the offer is listed on the Takealot platform,\nbased on factors such as completeness of information, image quality, and other\nrelevant criteria. A higher score indicates a better listing quality.\n\nThe score is typically calculated by Takealot's internal algorithms and can be used\nby sellers to identify areas for improvement in their listings.",
+            "example": 85,
+            "readOnly": true
+          },
+          "seller_warehouse_stock": {
+            "type": "array",
+            "description": "Stock levels in the seller's warehouses.",
+            "items": {
+              "$ref": "#/components/schemas/SellerWarehouseStock"
+            }
+          },
+          "takealot_warehouse_stock": {
+            "type": "array",
+            "description": "Stock levels in Takealot's warehouses.",
+            "items": {
+              "$ref": "#/components/schemas/TakealotRegionStock"
+            }
+          },
+          "offer_charges": {
+            "type": "array",
+            "description": "Charges associated with the offer.",
+            "items": {
+              "$ref": "#/components/schemas/OfferCharges"
+            }
+          },
+          "replenishment_blocks": {
+            "type": "array",
+            "description": "Details of explicit, full replenishment blocks currently applied to the\noffer.\n\n<b>Please note</b>: This array exclusively populates for full blocks. It\nwill not populate or return information for replenishment limits (even if\nthe limit is reached or set to 0) or replenishment allows. If no explicit\nfull block is active, this array will remain empty or be omitted.\n",
+            "items": {
+              "$ref": "#/components/schemas/ReplenishmentBlock"
+            }
+          }
+        }
+      },
+      "Count": {
+        "type": "integer",
+        "description": "Total count of items available with the given filters.",
+        "example": 150
+      },
+      "Limit": {
+        "type": "integer",
+        "description": "The maximum number of items returned at a time in the response.",
+        "example": 100
+      },
+      "ContinuationToken": {
+        "type": "string",
+        "description": "A token to retrieve the next page of results. If not provided, there are no more results.",
+        "example": "eyJvZmZzZXQiOiAxMDB9"
+      },
+      "ForbiddenError": {
+        "type": "object",
+        "description": "An error response returned when the request is forbidden, typically due to insufficient permissions or invalid authentication.",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "List of errors explaining why the request was forbidden.",
+            "items": {
+              "type": "object",
+              "description": "Details of a specific error.",
+              "properties": {
+                "status": {
+                  "type": "integer",
+                  "description": "The HTTP status code for the error.",
+                  "example": 403
+                },
+                "title": {
+                  "type": "string",
+                  "description": "A brief description of the error.",
+                  "example": "Forbidden"
+                },
+                "type": {
+                  "type": "string",
+                  "description": "A reference identifying the error type."
+                }
+              }
+            }
+          }
+        }
+      },
+      "ValidationError": {
+        "type": "object",
+        "description": "An error response returned when request validation fails, containing details about the validation errors.",
+        "properties": {
+          "errors": {
+            "type": "array",
+            "description": "List of validation errors that occurred.",
+            "items": {
+              "type": "object",
+              "description": "Details of a specific validation error.",
+              "properties": {
+                "status": {
+                  "type": "integer",
+                  "description": "The HTTP status code for the error.",
+                  "example": 400
+                },
+                "title": {
+                  "type": "string",
+                  "description": "A brief description of the validation error.",
+                  "example": "Invalid field value"
+                },
+                "type": {
+                  "type": "string",
+                  "description": "A URI reference identifying the error type.",
+                  "example": "https://api.takealot.com/errors/validation"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "description": "A simple error object containing an error title.",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "A brief description of the error.",
+            "example": "Resource not found"
+          }
+        }
+      },
+      "SKURequestBody": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 255,
+        "pattern": "^[a-zA-Z0-9-_/.]+$",
+        "description": "SKU (Stock Keeping Unit) for the offer (provided by the merchant)",
+        "example": "SKU-ABC123"
+      },
+      "SellingPriceRequestBody": {
+        "type": "integer",
+        "format": "int32",
+        "minimum": 1,
+        "description": "Selling Price in South African Rand.",
+        "example": 345
+      },
+      "RRPRequestBody": {
+        "type": "integer",
+        "format": "int32",
+        "minimum": 1,
+        "description": "RRP (Recommended Retail Price) in South African Rand.",
+        "example": 399
+      },
+      "OfferBatch": {
+        "type": "object",
+        "description": "An offer batch represents a collection of offers that were created or updated together as a single batch operation. Batches allow bulk management of offers.",
+        "properties": {
+          "batch_id": {
+            "type": "integer",
+            "description": "Unique identifier for the offer batch.",
+            "example": 98765
+          },
+          "status": {
+            "type": "string",
+            "description": "The current processing status of the batch.",
+            "example": "completed"
+          },
+          "results": {
+            "type": "array",
+            "description": "The results of the batch operation for each offer in the batch."
+          }
+        }
+      },
+      "Sale": {
+        "type": "object",
+        "description": "A sale represents a single item sold to a customer. It includes details about the order, the offer sold, pricing, and associated fees.",
+        "properties": {
+          "order_item_id": {
+            "type": "integer",
+            "description": "Unique identifier for the order item within the order.",
+            "example": 12345678
+          },
+          "order_id": {
+            "type": "integer",
+            "description": "Unique identifier for the customer order.",
+            "example": 9876543
+          },
+          "order_date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The date and time when the order was placed.",
+            "example": "2025-01-15T14:30:00+02:00"
+          },
+          "sale_status": {
+            "type": "string",
+            "description": "The current status of the sale.",
+            "example": "Preparing for Customer"
+          },
+          "offer_id": {
+            "$ref": "#/components/schemas/OfferID"
+          },
+          "tsin_id": {
+            "$ref": "#/components/schemas/TsinID"
+          },
+          "sku": {
+            "$ref": "#/components/schemas/SKU"
+          },
+          "selling_price": {
+            "$ref": "#/components/schemas/SellingPrice"
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "Quantity of items sold in the sale.",
+            "example": 3
+          },
+          "success_fee": {
+            "$ref": "#/components/schemas/SuccessFee"
+          },
+          "fulfillment_fee": {
+            "type": "number",
+            "description": "Fee associated with fulfillment for the sale.",
+            "example": 7.25
+          },
+          "courier_collection_fee": {
+            "type": "number",
+            "description": "Fee associated with courier collection for the sale.",
+            "example": 3.5
+          },
+          "total_fees": {
+            "type": "number",
+            "description": "The total fee for the sale, which is the sum of the success fee, fulfillment fee, and courier collection fee. This field represents the overall cost associated with the sale transaction.",
+            "example": 15.75
+          },
+          "stock_transfer_fee": {
+            "type": "number",
+            "description": "Fee associated with transferring stock between regions for the sale.",
+            "example": 5.25
+          },
+          "sales_region": {
+            "type": "string",
+            "description": "The region where the sale occurred.",
+            "example": "JHB"
+          },
+          "stock_source_region": {
+            "type": "string",
+            "description": "The region from which the stock was sourced.",
+            "example": "CPT"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TransactionTypeEnum": {
+        "type": "string",
+        "description": "The type of transaction\n\nTransaction types are generally grouped into the following categories:\n- charge: A fee charged to the seller, such as a subscription fee, fulfilment fee, storage fee, or success fee.\n- payment: A payment made to the seller, such as a customer order payment, disbursement, or rebate payment.\n- reversal: A reversal of a previous charge or payment, such as a success fee reversal, customer order payment reversal, or disbursement reversal.\n- disbursement: A disbursement to the seller, which may be a regular automated disbursement or a manual disbursement.\n- funding-repayment: A repayment of funding, such as a Seller Capital funding repayment.",
+        "example": "charge-subscription-fee",
+        "enum": [
+          "charge-subscription-fee",
+          "charge-fulfilment-fee",
+          "charge-storage-fee",
+          "charge-success-fee",
+          "reversal-success-fee",
+          "payment-customer-order",
+          "reversal-customer-order",
+          "disbursement-disbursement",
+          "reversal-disbursement",
+          "payment-eft-payment",
+          "charge-manual",
+          "disbursement-manual",
+          "reversal-manual",
+          "payment-manual",
+          "payment-debit-order",
+          "reversal-debit-order",
+          "payment-storage-fee-rebate",
+          "reversal-storage-fee-rebate-reversal",
+          "charge-order-cancellation-penalty",
+          "charge-courier-collection-fee",
+          "charge-removal-order",
+          "charge-stock-transfer-fee",
+          "charge-ad-credit-purchase",
+          "reversal-fulfilment-fee",
+          "reversal-courier-collection-fee",
+          "reversal-removal-order-fee-reversal",
+          "payment-stock-loss-payment",
+          "reversal-stock-loss-reversal",
+          "charge-stock-loss-success-fee",
+          "reversal-stock-loss-success-fee-reversal",
+          "charge-stock-loss-fulfilment-fee",
+          "reversal-stock-loss-fulfilment-fee-reversal",
+          "payment-return-dispute-payment",
+          "charge-removal-order-fee",
+          "charge-takealot-removal-order-fee",
+          "charge-returns-removal-order-fee",
+          "funding-repayment-funding-repayment-seller-capital"
+        ],
+        "x-enumDescriptions": {
+          "charge-subscription-fee": "A monthly subscription fee charge",
+          "charge-fulfilment-fee": "A fulfilment fee associated with a customer order",
+          "charge-storage-fee": "A storage fee charged for stock in warehouse",
+          "charge-success-fee": "A success fee associated with a customer order",
+          "reversal-success-fee": "A success fee reversal for a return/cancellation",
+          "payment-customer-order": "A customer order payment",
+          "reversal-customer-order": "A reversal for a customer order payment",
+          "disbursement-disbursement": "A disbursement transaction",
+          "reversal-disbursement": "A disbursement transaction reversal",
+          "payment-eft-payment": "An eft payment",
+          "charge-manual": "A manual fee charge",
+          "disbursement-manual": "A manual disbursement",
+          "reversal-manual": "A manual reversal of a transaction",
+          "payment-manual": "A manual payment",
+          "payment-debit-order": "A debit order payment",
+          "reversal-debit-order": "A debit order reversal",
+          "payment-storage-fee-rebate": "A storage fee rebate",
+          "reversal-storage-fee-rebate-reversal": "A storage fee rebate reversal",
+          "charge-order-cancellation-penalty": "An order cancellation penalty",
+          "charge-courier-collection-fee": "A courier collection fee associated with an order",
+          "charge-removal-order": "A removal order fee",
+          "charge-stock-transfer-fee": "A stock transfer fee associated with an order",
+          "charge-ad-credit-purchase": "A sponsored ad credit purchase",
+          "reversal-fulfilment-fee": "A reversal of a fulfilment fee",
+          "reversal-courier-collection-fee": "A reversal of a courier collection fee",
+          "reversal-removal-order-fee-reversal": "A reversal of a removal order fee",
+          "payment-stock-loss-payment": "A stock loss payment",
+          "reversal-stock-loss-reversal": "A stock loss payment reversal",
+          "charge-stock-loss-success-fee": "A stock loss success fee charge",
+          "reversal-stock-loss-success-fee-reversal": "A reversal of a stock loss success fee charge",
+          "charge-stock-loss-fulfilment-fee": "A stock loss fulfillment fee charge",
+          "reversal-stock-loss-fulfilment-fee-reversal": "A reversal of a stock loss fulfillment fee charge",
+          "payment-return-dispute-payment": "A return dispute payment",
+          "charge-removal-order-fee": "A removal order fee",
+          "charge-takealot-removal-order-fee": "A Takealot removal order fee",
+          "charge-returns-removal-order-fee": "A returns removal order fee",
+          "funding-repayment-funding-repayment-seller-capital": "A Seller Capital funding repayment"
+        }
+      },
+      "Transaction": {
+        "type": "object",
+        "properties": {
+          "transaction_id": {
+            "type": "integer",
+            "description": "Unique identifier for the transaction.",
+            "example": 12345
+          },
+          "transaction_type": {
+            "$ref": "#/components/schemas/TransactionTypeEnum"
+          },
+          "amount_incl_vat": {
+            "type": "number",
+            "description": "Total amount including VAT.",
+            "example": 115
+          },
+          "vat_multiplier": {
+            "type": "number",
+            "description": "Multiplier to calculate the VAT amount from the amount including VAT.",
+            "example": 0.15
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The date and time when the transaction was created.",
+            "example": "2024-01-15T12:34:56+02:00"
+          }
+        }
+      },
+      "RRN": {
+        "type": "string",
+        "minLength": 1,
+        "description": "RRN (Return Reference Number) for the original customer return",
+        "readOnly": true,
+        "example": "RRN-QBYQ7-E67K"
+      },
+      "TransactionReference": {
+        "type": "object",
+        "properties": {
+          "order_item_id": {
+            "type": "integer",
+            "description": "Unique identifier for the order item within the order.",
+            "example": 12345678
+          },
+          "order_id": {
+            "type": "integer",
+            "description": "Unique identifier for the customer order.",
+            "example": 9876543
+          },
+          "rule": {
+            "type": "string",
+            "description": "Transaction Rule that was applied to the transaction to determine the applicable fees. This is a free-form string that can be used to identify the rule that was applied to the transaction.  It is not a unique identifier and can be the same for multiple order items.",
+            "example": "Fulfilment Fee: Light, Standard"
+          },
+          "offer_id": {
+            "$ref": "#/components/schemas/OfferID"
+          },
+          "item_quantity": {
+            "type": "integer",
+            "description": "The quantity of items (offers) involved in the transaction.",
+            "example": 2
+          },
+          "manual_reference": {
+            "type": "string",
+            "description": "A reference that can be used to describe the transaction. This is a free-form string that can be used to provide additional information about the transaction.",
+            "example": "Customer requested a refund for 2 items"
+          },
+          "return_reference_number": {
+            "$ref": "#/components/schemas/RRN"
+          },
+          "purchase_order_number": {
+            "type": "integer",
+            "description": "The purchase order number associated with the transaction.",
+            "example": 65432
+          },
+          "removal_order_item_id": {
+            "type": "integer",
+            "description": "The ID of the removal order item",
+            "example": 12345
+          }
+        }
+      },
+      "TransactionWithReferences": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Transaction"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "references": {
+                "description": "The references associated with this transaction, providing context such as order, offer, or return identifiers.",
+                "$ref": "#/components/schemas/TransactionReference"
+              }
+            }
+          }
+        ]
+      },
+      "DisbursementInformation": {
+        "type": "object",
+        "description": "Disbursement information containing the seller's balance details, including current, available, and held back amounts.",
+        "properties": {
+          "balances": {
+            "type": "object",
+            "description": "The balance breakdown for the seller account.",
+            "properties": {
+              "current": {
+                "type": "number",
+                "description": "The current total balance in the seller's account.",
+                "example": 15000.5
+              },
+              "available": {
+                "type": "number",
+                "description": "The amount available for disbursement to the seller.",
+                "example": 12500
+              },
+              "held_back": {
+                "type": "number",
+                "description": "The amount held back and not available for disbursement.",
+                "example": 2500.5
+              }
+            }
+          }
+        }
+      },
+      "ShipmentTypeEnum": {
+        "type": "string",
+        "description": "The type of shipment. Indicates whether the shipment is for customer orders, replenishment of warehouse stock, or a combination of both.",
+        "example": "replenishment",
+        "enum": [
+          "customer_order",
+          "replenishment",
+          "mixed"
+        ]
+      },
+      "PurchaseOrderStateEnum": {
+        "type": "string",
+        "description": "The state of a purchase order in the shipment lifecycle. Indicates the current progress of receiving stock at the warehouse.",
+        "example": "shipped",
+        "enum": [
+          "shipped",
+          "receiving",
+          "partially_received",
+          "received_full_quantity",
+          "closed_partially_received",
+          "cancelled",
+          "unloaded"
+        ]
+      },
+      "ShipmentItem": {
+        "type": "object",
+        "properties": {
+          "shipment_item_id": {
+            "type": "integer",
+            "description": "The unique identifier for the shipment item.",
+            "example": 34567
+          },
+          "offer_id": {
+            "$ref": "#/components/schemas/OfferID"
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The date and time when the shipment item is due.",
+            "example": "2023-01-01T00:00:00Z"
+          },
+          "cancelled": {
+            "type": "boolean",
+            "description": "Whether this shipment item has been cancelled. Applies mostly to items that are on leadtime orders.",
+            "example": false
+          },
+          "shipment_item_type": {
+            "$ref": "#/components/schemas/ShipmentTypeEnum",
+            "description": "The type of shipment item. Indicates whether the shipment item is for customer orders or replenishment of warehouse stock, or a combination of both."
+          },
+          "quantity_required": {
+            "type": "integer",
+            "description": "Quantity of items required in the shipment.",
+            "example": 100
+          },
+          "quantity_sending": {
+            "type": "integer",
+            "description": "Quantity of items being sent in the shipment.",
+            "example": 100
+          },
+          "purchase_order_quantity_received": {
+            "type": "integer",
+            "description": "Quantity of purchase order items received.",
+            "example": 50
+          },
+          "purchase_order_quantity_damaged": {
+            "type": "integer",
+            "description": "Quantity of purchase order items damaged.",
+            "example": 5
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The date and time when the shipment item was added.",
+            "example": "2025-07-01T10:30:00+02:00"
+          },
+          "due_date_last_modified": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The date and time when the shipment item's due date was last modified.",
+            "example": "2025-06-01T10:30:00+02:00"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Shipment": {
+        "type": "object",
+        "description": "A shipment represents a collection of items being sent from the seller to a designated warehouse or facility.",
+        "properties": {
+          "shipment_id": {
+            "type": "integer",
+            "description": "The unique identifier for the shipment. Assigned by the system when the shipment is created.",
+            "readOnly": true,
+            "example": 12345
+          },
+          "reference": {
+            "type": "string",
+            "description": "A user-defined reference for the shipment, such as a tracking number or internal reference code. It defaults to a combination of the purchase order number, date, destination region, and a sequence number to ensure uniqueness.",
+            "example": "PO-2987543-07/12/2025-JHB-1"
+          },
+          "destination_region": {
+            "$ref": "#/components/schemas/RegionEnum",
+            "description": "The region where the shipment is being sent."
+          },
+          "shipped": {
+            "type": "boolean",
+            "description": "A boolean flag indicating whether the shipment has been shipped.",
+            "example": false
+          },
+          "archived": {
+            "type": "boolean",
+            "description": "A boolean flag indicating whether the shipment has been archived.",
+            "example": false
+          },
+          "purchase_order_number": {
+            "type": "integer",
+            "description": "The purchase order number associated with the shipment.",
+            "example": 2987543
+          },
+          "cancelled": {
+            "type": "boolean",
+            "description": "A boolean flag indicating whether the shipment has been cancelled.",
+            "example": false
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date",
+            "description": "The date by which the shipment is expected to be delivered to the destination facility.",
+            "example": "2025-07-15"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The date and time when the shipment was added to the system.",
+            "example": "2025-07-01T10:30:00+02:00"
+          },
+          "due_date_last_modified": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The date and time when the shipment's due date was last modified.",
+            "example": "2025-06-01T10:30:00+02:00"
+          },
+          "date_unloaded": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The date and time when the shipment was unloaded at the destination facility.",
+            "example": "2025-08-01T10:30:00+02:00"
+          },
+          "destination_facility_id": {
+            "type": "integer",
+            "description": "The destination facility is the warehouse or location where the shipment is being sent. This field contains the unique identifier for that facility.",
+            "example": 6
+          },
+          "shipment_type": {
+            "$ref": "#/components/schemas/ShipmentTypeEnum"
+          },
+          "purchase_order_state": {
+            "$ref": "#/components/schemas/PurchaseOrderStateEnum"
+          },
+          "tracking_info": {
+            "type": "string",
+            "description": "The tracking information associated with the shipment, such as a tracking number or carrier details",
+            "example": "Carrier: DHL, Tracking Number: 123456789"
+          },
+          "shipment_items": {
+            "type": "array",
+            "description": "The list of items included in this shipment.",
+            "items": {
+              "$ref": "#/components/schemas/ShipmentItem"
+            }
+          }
+        }
+      },
+      "ReturnReasonEnum": {
+        "type": "string",
+        "description": "The reason provided by the customer for returning an item. This helps sellers understand why products are being returned.",
+        "example": "defective_or_damaged",
+        "enum": [
+          "changed_my_mind",
+          "customer_cancellation",
+          "defective_or_damaged",
+          "exception",
+          "exchange_for_a_different_size_colour",
+          "failed_delivery",
+          "not_what_i_ordered"
+        ]
+      },
+      "ReturnOutcomeEnum": {
+        "type": "string",
+        "description": "The outcome status of a return. Indicates the current state of the returned item in the return processing workflow.",
+        "example": "sellable_stock",
+        "enum": [
+          "pending_removal_order",
+          "removal_order",
+          "pending_sellable_stock",
+          "sellable_stock"
+        ]
+      },
+      "RegionQueryEnum": {
+        "type": "string",
+        "description": "A Takealot region code for query parameters. Accepts both uppercase and lowercase values for convenience.",
+        "example": "JHB",
+        "enum": [
+          "CPT",
+          "JHB",
+          "DBN",
+          "cpt",
+          "jhb",
+          "dbn"
+        ]
+      },
+      "ReturnOutcome": {
+        "type": "object",
+        "description": "The outcome of a seller return, including its current status and any associated data.",
+        "properties": {
+          "outcome_id": {
+            "type": "integer",
+            "description": "Unique identifier for the return outcome.",
+            "example": 12345,
+            "readOnly": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/ReturnOutcomeEnum"
+          }
+        }
+      },
+      "SellerReturn": {
+        "type": "object",
+        "description": "A seller return represents a product returned by a customer to the seller. It includes details such as the reason for return, the outcome of the return process, and relevant product information.",
+        "properties": {
+          "seller_return_id": {
+            "type": "integer",
+            "description": "Unique identifier for the seller return.",
+            "example": 12345,
+            "readOnly": true
+          },
+          "order_id": {
+            "type": "integer",
+            "description": "Unique identifier for the customer order.",
+            "example": 9876543
+          },
+          "offer_id": {
+            "$ref": "#/components/schemas/OfferID"
+          },
+          "tsin_id": {
+            "$ref": "#/components/schemas/TsinID"
+          },
+          "return_reference_number": {
+            "$ref": "#/components/schemas/RRN"
+          },
+          "sku": {
+            "$ref": "#/components/schemas/SKU"
+          },
+          "return_region": {
+            "$ref": "#/components/schemas/RegionEnum",
+            "description": "The region where the return was processed. This could be different from the region\nof the original sale."
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "The number of items returned by the customer.",
+            "example": 1
+          },
+          "return_date": {
+            "type": "string",
+            "format": "date",
+            "description": "The date when the customer return was concluded.",
+            "example": "2024-05-15"
+          },
+          "return_reason": {
+            "$ref": "#/components/schemas/ReturnReasonEnum"
+          },
+          "outcomes": {
+            "type": "array",
+            "description": "A list of outcomes associated with the seller return, such as refunds, replacements, or other resolutions.",
+            "items": {
+              "$ref": "#/components/schemas/ReturnOutcome"
+            }
+          },
+          "transactions": {
+            "type": "array",
+            "description": "A list of financial transactions associated with the seller return, such as refunds or fee adjustments.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "transaction_type": {
+                  "$ref": "#/components/schemas/TransactionTypeEnum"
+                },
+                "amount_incl_vat": {
+                  "type": "number",
+                  "description": "Total amount including VAT.",
+                  "example": 115
+                }
+              }
+            }
+          },
+          "customer_comment": {
+            "description": "An optional comment provided by the customer regarding the return, which may offer additional context or details about the reason for the return.",
+            "example": "The product was defective and did not work as expected.",
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EnabledRegions": {
+        "type": "object",
+        "description": "A response containing the list of enabled regions for facilities. Each region includes its ID and code.",
+        "properties": {
+          "regions": {
+            "type": "array",
+            "description": "List of enabled regions available for facilities.",
+            "items": {
+              "type": "object",
+              "description": "A region where facilities are available.",
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "description": "The unique identifier for the region.",
+                  "example": 1
+                },
+                "code": {
+                  "type": "string",
+                  "description": "The region code (e.g., CPT for Cape Town, JHB for Johannesburg).",
+                  "example": "CPT"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Seller": {
+        "type": "object",
+        "description": "Information about a seller on the Takealot marketplace, including account details, settings, and associated resources.",
+        "properties": {
+          "seller_id": {
+            "type": "integer",
+            "description": "Unique identifier for the seller account.",
+            "example": 12345
+          },
+          "display_name": {
+            "type": "string",
+            "description": "The public display name shown to customers on the marketplace.",
+            "example": "Tech Gadgets Store"
+          },
+          "legal_name": {
+            "type": "string",
+            "description": "The registered legal name of the seller's business.",
+            "example": "Tech Gadgets (Pty) Ltd"
+          },
+          "logo": {
+            "type": "string",
+            "description": "URL to the seller's logo image.",
+            "example": "https://seller-logos.takealot.com/12345/logo.png"
+          },
+          "leadtime_enabled": {
+            "type": "boolean",
+            "description": "Whether leadtime (ship-from-seller) is enabled for this seller.",
+            "example": true
+          },
+          "terms_accepted": {
+            "type": "boolean",
+            "description": "Whether the seller has accepted the marketplace terms and conditions.",
+            "example": true
+          },
+          "on_vacation": {
+            "type": "boolean",
+            "description": "Whether the seller is currently on vacation mode.",
+            "example": false
+          },
+          "account_owner_account_id": {
+            "type": "integer",
+            "description": "The account ID of the owner of this seller account.",
+            "example": 54321
+          },
+          "main_contact_account_id": {
+            "type": "integer",
+            "description": "The account ID of the main contact person for this seller.",
+            "example": 54322
+          },
+          "disable_listing_enabled": {
+            "type": "boolean",
+            "description": "Whether the seller can disable their own listings.",
+            "example": true
+          },
+          "used_goods_enabled": {
+            "type": "boolean",
+            "description": "Whether the seller is enabled to sell used/refurbished goods.",
+            "example": false
+          },
+          "disbursement_enabled": {
+            "type": "boolean",
+            "description": "Whether automatic disbursements are enabled for the seller.",
+            "example": true
+          },
+          "debit_order_enabled": {
+            "type": "boolean",
+            "description": "Whether debit order payments are enabled for the seller.",
+            "example": false
+          },
+          "drop_ship_enabled": {
+            "type": "boolean",
+            "description": "Whether drop shipping is enabled for the seller.",
+            "example": false
+          },
+          "debit_order_exempt": {
+            "type": "boolean",
+            "description": "Whether the seller is exempt from debit order requirements.",
+            "example": false
+          },
+          "barcode_exempt": {
+            "type": "boolean",
+            "description": "Whether the seller is exempt from barcode requirements.",
+            "example": false
+          },
+          "account_verified": {
+            "type": "boolean",
+            "description": "Whether the seller's account has been verified.",
+            "example": true
+          },
+          "force_registration_exempt": {
+            "type": "boolean",
+            "description": "Whether the seller is exempt from force registration requirements.",
+            "example": false
+          },
+          "direct_return_procedure": {
+            "type": "string",
+            "description": "The procedure for handling direct returns for this seller.",
+            "example": "standard"
+          },
+          "seller_status_id": {
+            "type": "integer",
+            "description": "The ID representing the current status of the seller account.",
+            "example": 1
+          },
+          "date_added": {
+            "type": "string",
+            "format": "date",
+            "description": "The date when the seller account was created.",
+            "example": "2023-06-15"
+          },
+          "date_terms_accepted": {
+            "type": "string",
+            "format": "date",
+            "description": "The date when the seller accepted the terms and conditions.",
+            "example": "2023-06-15"
+          },
+          "registration_complete": {
+            "type": "boolean",
+            "description": "Whether the seller has completed the registration process.",
+            "example": true
+          },
+          "onboarding_exempt": {
+            "type": "boolean",
+            "description": "Whether the seller is exempt from the standard onboarding process.",
+            "example": false
+          },
+          "replenishment_disabled": {
+            "type": "boolean",
+            "description": "Whether stock replenishment is disabled for the seller.",
+            "example": false
+          },
+          "is_international": {
+            "type": "boolean",
+            "description": "Whether the seller is classified as an international seller.",
+            "example": false
+          },
+          "is_vat_registered": {
+            "type": "boolean",
+            "description": "Whether the seller is registered for VAT.",
+            "example": true
+          },
+          "uuid": {
+            "type": "string",
+            "description": "Universally unique identifier for the seller.",
+            "example": "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "countries": {
+            "type": "array",
+            "description": "List of countries where the seller operates.",
+            "items": {
+              "type": "string",
+              "description": "Country code or name.",
+              "example": "ZA"
+            }
+          },
+          "leadtime_details": {
+            "type": "array",
+            "description": "Leadtime configuration details for the seller.",
+            "items": {
+              "type": "object",
+              "description": "Leadtime range configuration.",
+              "properties": {
+                "min_days": {
+                  "type": "integer",
+                  "description": "Minimum number of days for leadtime delivery.",
+                  "example": 3
+                },
+                "max_days": {
+                  "type": "integer",
+                  "description": "Maximum number of days for leadtime delivery.",
+                  "example": 7
+                }
+              }
+            }
+          },
+          "warehouses": {
+            "type": "array",
+            "description": "List of warehouses associated with the seller.",
+            "items": {
+              "type": "object",
+              "description": "A seller's warehouse location.",
+              "properties": {
+                "seller_warehouse_id": {
+                  "type": "integer",
+                  "description": "Unique identifier for the seller's warehouse.",
+                  "example": 1234
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Name of the warehouse.",
+                  "example": "Main Distribution Center"
+                },
+                "address_line_1": {
+                  "type": "string",
+                  "description": "First line of the warehouse address.",
+                  "example": "123 Industrial Road"
+                },
+                "address_line_2": {
+                  "type": "string",
+                  "description": "Second line of the warehouse address.",
+                  "example": "Unit 5"
+                },
+                "suburb": {
+                  "type": "string",
+                  "description": "Suburb where the warehouse is located.",
+                  "example": "Montague Gardens"
+                },
+                "city": {
+                  "type": "string",
+                  "description": "City where the warehouse is located.",
+                  "example": "Cape Town"
+                },
+                "postal_code": {
+                  "type": "string",
+                  "description": "Postal code of the warehouse location.",
+                  "example": "7441"
+                },
+                "region": {
+                  "$ref": "#/components/schemas/RegionEnum"
+                },
+                "country": {
+                  "type": "string",
+                  "description": "Country where the warehouse is located.",
+                  "example": "South Africa"
+                }
+              }
+            }
+          },
+          "vacations": {
+            "type": "array",
+            "description": "List of vacation periods configured by the seller.",
+            "items": {
+              "type": "object",
+              "description": "A vacation period during which the seller is unavailable.",
+              "properties": {
+                "vacation_id": {
+                  "type": "integer",
+                  "description": "Unique identifier for the vacation period.",
+                  "example": 5678
+                },
+                "date_start": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "Start date of the vacation period.",
+                  "example": "2025-12-20"
+                },
+                "date_end": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "End date of the vacation period.",
+                  "example": "2026-01-05"
+                },
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Whether this vacation period is currently active.",
+                  "example": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "parameters": {
+      "OfferID": {
+        "name": "offer_id",
+        "description": "Takealot offer ID",
+        "in": "query",
+        "required": false,
+        "example": 1234567890,
+        "schema": {
+          "$ref": "#/components/schemas/OfferID"
+        }
+      },
+      "OfferIDIn": {
+        "description": "Filter by offers with these IDs.",
+        "name": "offer_id__in",
+        "in": "query",
+        "required": false,
+        "example": [
+          1234567,
+          1234568,
+          1234569
+        ],
+        "schema": {
+          "type": "array",
+          "items": {
+            "$ref": "#/components/schemas/OfferID"
+          }
+        }
+      },
+      "OfferFields": {
+        "description": "Return only these fields.",
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "example": [
+          "offer_id",
+          "sku",
+          "selling_price",
+          "status",
+          "title"
+        ],
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "offer_id",
+              "tsin_id",
+              "sku",
+              "barcode",
+              "product_label",
+              "selling_price",
+              "rrp",
+              "minimum_leadtime_days",
+              "status",
+              "title",
+              "discount_percentage",
+              "storage_fee_eligible",
+              "created_at",
+              "updated_at",
+              "affected_by_vacation",
+              "disabled_by_seller",
+              "disabled_by_takealot",
+              "conversion_percentage_30_days",
+              "conversion_percentage_previous_30_days",
+              "page_views_30_days",
+              "quantity_returned_30_days",
+              "condition",
+              "image_url",
+              "productline_id",
+              "width_cm",
+              "length_cm",
+              "height_cm",
+              "weight_grams",
+              "is_conveyable",
+              "benchmark_price",
+              "total_wishlist",
+              "wishlist_30_days",
+              "listing_quality"
+            ]
+          }
+        }
+      },
+      "OfferExpands": {
+        "description": "Expand the response with related entities.\n\n<b>Note on</b> `replenishment_blocks`: Including this enum will only return a response\nif the offer is currently subject to an explicit, full replenishment block. It\ndoes not return data regarding replenishment limits (including instances where\nthe limit is 0, which acts as a block) or replenishment allows. If the offer\nis not fully blocked, no replenishment data will be returned.\n",
+        "name": "expands",
+        "in": "query",
+        "required": false,
+        "example": [
+          "seller_warehouse_stock",
+          "takealot_warehouse_stock"
+        ],
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "seller_warehouse_stock",
+              "offer_charges",
+              "takealot_warehouse_stock",
+              "replenishment_blocks"
+            ]
+          }
+        }
+      },
+      "Limit": {
+        "description": "Limit the number of results returned. Default is 100, maximum is 1000.",
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "example": 50,
+        "schema": {
+          "type": "integer",
+          "default": 100,
+          "minimum": 1,
+          "maximum": 1000
+        }
+      },
+      "ContinuationToken": {
+        "description": "Continuation token to get the next page of results. Obtained from a previous response.",
+        "name": "continuation_token",
+        "in": "query",
+        "required": false,
+        "example": "eyJvZmZzZXQiOiAxMDB9",
+        "schema": {
+          "type": "string",
+          "minimum": 1
+        }
+      },
+      "IncludeCount": {
+        "description": "Include a count of total items in the response.",
+        "name": "include_count",
+        "in": "query",
+        "required": false,
+        "example": true,
+        "schema": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "OfferIDPath": {
+        "name": "offer_id",
+        "description": "Takealot offer ID",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/OfferID"
+        },
+        "example": 1234567890
+      },
+      "SKU": {
+        "name": "sku",
+        "in": "path",
+        "description": "SKU (Stock Keeping Unit) for the offer (provided by the merchant)",
+        "example": "SKU-ABC123",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "Barcode": {
+        "description": "Barcode for the offer (provided by the merchant)",
+        "name": "barcode",
+        "in": "path",
+        "required": true,
+        "example": "MPTALX12345678-9",
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "SaleFields": {
+        "description": "Return only these fields.",
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "example": [
+          "order_id",
+          "order_date",
+          "sale_status",
+          "selling_price",
+          "quantity"
+        ],
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "order_item_id",
+              "order_id",
+              "order_date",
+              "sale_status",
+              "offer_id",
+              "tsin_id",
+              "sku",
+              "selling_price",
+              "quantity",
+              "success_fee",
+              "fulfillment_fee",
+              "courier_collection_fee",
+              "total_fees",
+              "stock_transfer_fee",
+              "sales_region",
+              "stock_source_region"
+            ]
+          }
+        }
+      },
+      "TransactionTypeIn": {
+        "description": "Return only transactions of these types.",
+        "name": "transaction_type__in",
+        "in": "query",
+        "required": false,
+        "example": [
+          "charge-success-fee",
+          "payment-customer-order"
+        ],
+        "schema": {
+          "type": "array",
+          "items": {
+            "minimum": 1,
+            "$ref": "#/components/schemas/TransactionTypeEnum"
+          }
+        }
+      },
+      "TransactionFields": {
+        "description": "Return only these fields.",
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "example": [
+          "transaction_id",
+          "transaction_type",
+          "amount_incl_vat",
+          "created_at"
+        ],
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "transaction_id",
+              "transaction_type",
+              "amount_incl_vat",
+              "vat_multiplier",
+              "created_at"
+            ]
+          }
+        }
+      },
+      "TransactionExpands": {
+        "description": "Expand the response with related entities.",
+        "name": "expands",
+        "in": "query",
+        "required": false,
+        "example": [
+          "references"
+        ],
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "references"
+            ]
+          }
+        }
+      },
+      "ShipmentFields": {
+        "description": "Return only these fields.",
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "example": [
+          "shipment_id",
+          "reference",
+          "destination_region",
+          "shipped",
+          "due_date",
+          "created_at"
+        ],
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "shipment_id",
+              "reference",
+              "destination_region",
+              "shipped",
+              "archived",
+              "purchase_order_number",
+              "cancelled",
+              "due_date",
+              "created_at",
+              "purchase_order_state",
+              "shipment_type",
+              "due_date_last_modified",
+              "date_unloaded",
+              "destination_facility_id",
+              "tracking_info"
+            ]
+          }
+        }
+      },
+      "ShipmentExpands": {
+        "description": "Expand the response with related entities.",
+        "name": "expands",
+        "in": "query",
+        "required": false,
+        "example": [
+          "shipment_items"
+        ],
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "shipment_items"
+            ]
+          }
+        }
+      },
+      "ReturnFields": {
+        "description": "Return only these fields.",
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "example": [
+          "seller_return_id",
+          "order_id",
+          "return_date",
+          "return_reason"
+        ],
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "customer_comment",
+              "offer_id",
+              "order_id",
+              "quantity",
+              "return_region",
+              "return_date",
+              "return_reason",
+              "return_reference_number",
+              "seller_return_id",
+              "sku",
+              "tsin_id"
+            ]
+          }
+        }
+      },
+      "ReturnExpands": {
+        "description": "Expand the response with related entities.",
+        "name": "expands",
+        "in": "query",
+        "required": false,
+        "example": [
+          "outcomes",
+          "transactions"
+        ],
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "outcomes",
+              "transactions"
+            ]
+          }
+        }
+      },
+      "LimitTen": {
+        "description": "Limit the number of results returned. Default is 10, maximum is 100.",
+        "name": "limit",
+        "in": "query",
+        "required": false,
+        "example": 25,
+        "schema": {
+          "type": "integer",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 100
+        }
+      },
+      "ReturnIDPath": {
+        "description": "Takealot return ID",
+        "name": "return_id",
+        "in": "path",
+        "required": true,
+        "example": 9876543,
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "SellerFields": {
+        "description": "Return only these fields.",
+        "name": "fields",
+        "in": "query",
+        "required": false,
+        "example": [
+          "seller_id",
+          "display_name",
+          "legal_name",
+          "on_vacation"
+        ],
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "account_owner_account_id",
+              "account_verified",
+              "barcode_exempt",
+              "date_added",
+              "date_terms_accepted",
+              "debit_order_enabled",
+              "debit_order_exempt",
+              "direct_return_procedure",
+              "disable_listing_enabled",
+              "disbursement_enabled",
+              "display_name",
+              "drop_ship_enabled",
+              "force_registration_exempt",
+              "is_international",
+              "is_vat_registered",
+              "leadtime_enabled",
+              "legal_name",
+              "logo",
+              "main_contact_account_id",
+              "on_vacation",
+              "onboarding_exempt",
+              "registration_complete",
+              "replenishment_disabled",
+              "seller_id",
+              "seller_status_id",
+              "terms_accepted",
+              "used_goods_enabled",
+              "uuid"
+            ]
+          }
+        }
+      },
+      "SellerExpands": {
+        "description": "Expand the response with related entities.",
+        "name": "expands",
+        "in": "query",
+        "required": false,
+        "example": [
+          "warehouses",
+          "vacations"
+        ],
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "warehouses",
+              "leadtime_details",
+              "vacations",
+              "countries"
+            ]
+          }
+        }
+      }
+    },
+    "responses": {
+      "DefaultErrorResponse": {
+        "description": "General response format for non-200 responses",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/DefaultError"
+            }
+          }
+        }
+      },
+      "ListOffersResponse": {
+        "description": "Response payload for listing offers",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "description": "A paginated list of offers.",
+              "properties": {
+                "items": {
+                  "type": "array",
+                  "description": "The list of offers in this page of results.",
+                  "items": {
+                    "$ref": "#/components/schemas/Offer"
+                  }
+                },
+                "count": {
+                  "$ref": "#/components/schemas/Count"
+                },
+                "limit": {
+                  "$ref": "#/components/schemas/Limit"
+                },
+                "continuation_token": {
+                  "$ref": "#/components/schemas/ContinuationToken"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      },
+      "ForbiddenErrorResponse": {
+        "description": "API key is missing or invalid",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ForbiddenError"
+            }
+          }
+        }
+      },
+      "ValidationErrorResponse": {
+        "description": "HTTP 400 errors with sub-types",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ValidationError"
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "description": "HTTP 500 errors with sub-types",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "GetOfferResponse": {
+        "description": "Response payload for getting a single offer",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Offer"
+            }
+          }
+        }
+      },
+      "GetOfferBatchResponse": {
+        "description": "Response payload for getting an offer batch",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/OfferBatch"
+            }
+          }
+        }
+      },
+      "ListSalesResponse": {
+        "description": "Response payload for listing sales",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "description": "A paginated list of sales.",
+              "properties": {
+                "items": {
+                  "type": "array",
+                  "description": "The list of sales in this page of results.",
+                  "items": {
+                    "$ref": "#/components/schemas/Sale"
+                  }
+                },
+                "count": {
+                  "$ref": "#/components/schemas/Count"
+                },
+                "limit": {
+                  "$ref": "#/components/schemas/Limit"
+                },
+                "continuation_token": {
+                  "$ref": "#/components/schemas/ContinuationToken"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      },
+      "ListTransactionsResponse": {
+        "description": "Response payload for listing transactions",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "description": "A paginated list of transactions.",
+              "properties": {
+                "items": {
+                  "type": "array",
+                  "description": "The list of transactions in this page of results.",
+                  "items": {
+                    "$ref": "#/components/schemas/TransactionWithReferences"
+                  }
+                },
+                "count": {
+                  "$ref": "#/components/schemas/Count"
+                },
+                "limit": {
+                  "$ref": "#/components/schemas/Limit"
+                },
+                "continuation_token": {
+                  "$ref": "#/components/schemas/ContinuationToken"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      },
+      "ListShipmentsResponse": {
+        "description": "Response payload for listing shipments",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "description": "A paginated list of shipments.",
+              "properties": {
+                "items": {
+                  "type": "array",
+                  "description": "The list of shipments in this page of results.",
+                  "items": {
+                    "$ref": "#/components/schemas/Shipment"
+                  }
+                },
+                "count": {
+                  "$ref": "#/components/schemas/Count"
+                },
+                "limit": {
+                  "$ref": "#/components/schemas/Limit"
+                },
+                "continuation_token": {
+                  "$ref": "#/components/schemas/ContinuationToken"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      },
+      "GetShipmentResponse": {
+        "description": "Response payload for getting a single shipment",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Shipment"
+            }
+          }
+        }
+      },
+      "ListReturnsResponse": {
+        "description": "Response payload for listing seller returns",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "description": "A paginated list of seller returns.",
+              "properties": {
+                "items": {
+                  "type": "array",
+                  "description": "The list of seller returns in this page of results.",
+                  "items": {
+                    "$ref": "#/components/schemas/SellerReturn"
+                  }
+                },
+                "count": {
+                  "$ref": "#/components/schemas/Count"
+                },
+                "limit": {
+                  "$ref": "#/components/schemas/Limit"
+                },
+                "continuation_token": {
+                  "$ref": "#/components/schemas/ContinuationToken"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        }
+      },
+      "GetReturnResponse": {
+        "description": "Response payload for getting a single seller return",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/SellerReturn"
+            }
+          }
+        }
+      },
+      "ListEnabledRegionsResponse": {
+        "description": "Response payload for getting enabled regions",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/EnabledRegions"
+            }
+          }
+        }
+      }
+    },
+    "requestBodies": {
+      "CreateOfferRequest": {
+        "description": "Request body for creating an offer.",
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": false,
+              "properties": {
+                "barcode": {
+                  "type": "string",
+                  "minLength": 1,
+                  "required": true,
+                  "description": "Barcode for the offer (provided by the merchant)",
+                  "example": "MPTALX12345678-9"
+                },
+                "sku": {
+                  "$ref": "#/components/schemas/SKURequestBody"
+                },
+                "minimum_leadtime_days": {
+                  "type": "integer",
+                  "description": "The leadtime in days for the offer to be shipped to a Takealot facility when shipped from the seller's warehouse.",
+                  "example": 5
+                },
+                "selling_price": {
+                  "$ref": "#/components/schemas/SellingPriceRequestBody"
+                },
+                "rrp": {
+                  "$ref": "#/components/schemas/RRPRequestBody"
+                },
+                "seller_warehouse_stock": {
+                  "type": "array",
+                  "description": "Stock levels in the seller's warehouses.",
+                  "items": {
+                    "type": "object",
+                    "description": "Stock quantity at a specific seller warehouse.",
+                    "required": [
+                      "seller_warehouse_id",
+                      "quantity_available"
+                    ],
+                    "properties": {
+                      "seller_warehouse_id": {
+                        "type": "integer",
+                        "description": "The ID of the seller's warehouse. Assigned by Takealot.",
+                        "example": 1234
+                      },
+                      "quantity_available": {
+                        "type": "integer",
+                        "description": "The quantity of stock that is available for purchase from this warehouse.",
+                        "example": 100
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "UpdateOfferRequest": {
+        "description": "Request body for updating an offer.",
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": false,
+              "properties": {
+                "sku": {
+                  "$ref": "#/components/schemas/SKURequestBody"
+                },
+                "minimum_leadtime_days": {
+                  "type": "integer",
+                  "description": "The leadtime in days for the offer to be shipped to a Takealot facility when shipped from the seller's warehouse.",
+                  "example": 5
+                },
+                "selling_price": {
+                  "$ref": "#/components/schemas/SellingPriceRequestBody"
+                },
+                "rrp": {
+                  "$ref": "#/components/schemas/RRPRequestBody"
+                },
+                "seller_warehouse_stock": {
+                  "type": "array",
+                  "description": "Stock levels in the seller's warehouses.",
+                  "items": {
+                    "type": "object",
+                    "description": "Stock quantity at a specific seller warehouse.",
+                    "required": [
+                      "seller_warehouse_id",
+                      "quantity_available"
+                    ],
+                    "properties": {
+                      "seller_warehouse_id": {
+                        "type": "integer",
+                        "description": "The ID of the seller's warehouse. Assigned by Takealot.",
+                        "example": 1234
+                      },
+                      "quantity_available": {
+                        "type": "integer",
+                        "description": "The quantity of stock that is available for purchase from this warehouse.",
+                        "example": 100
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "CreateOfferBatchRequest": {
+        "description": "Request body for creating an offer batch.",
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": false,
+              "properties": {
+                "offers": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "offer_id": {
+                        "type": "integer",
+                        "description": "The unique ID of the offer"
+                      },
+                      "sku": {
+                        "$ref": "#/components/schemas/SKURequestBody"
+                      },
+                      "barcode": {
+                        "type": "string",
+                        "description": "The barcode that exists in Takealot's Catalogue - this can be used to create a new offer"
+                      },
+                      "selling_price": {
+                        "$ref": "#/components/schemas/SellingPriceRequestBody"
+                      },
+                      "rrp": {
+                        "$ref": "#/components/schemas/RRPRequestBody"
+                      },
+                      "leadtime_days": {
+                        "type": "integer",
+                        "description": "The leadtime days of the offer. You can remove leadtime days from your offer by sending through -1."
+                      },
+                      "leadtime_stock": {
+                        "type": "array",
+                        "description": "The leadtime stock of the offer. Please ensure that the merchant_warehouse_id is correct, found at https://seller.takealot.com/api/seller-api/offers and send a positive whole number for the quantity.",
+                        "items": {
+                          "type": "object",
+                          "description": "Stock quantity at a specific merchant warehouse.",
+                          "required": [
+                            "merchant_warehouse_id",
+                            "quantity"
+                          ],
+                          "properties": {
+                            "merchant_warehouse_id": {
+                              "type": "integer",
+                              "description": "The ID of the merchant's warehouse.",
+                              "example": 1234
+                            },
+                            "quantity": {
+                              "type": "integer",
+                              "description": "The quantity of stock available at this warehouse.",
+                              "example": 100
+                            }
+                          }
+                        }
+                      },
+                      "status_action": {
+                        "type": "string",
+                        "description": "This allows you to set the status of the offer to 'Disabled by Seller' (by sending through Disable) or 'Buyable' or 'Not Buyable' (by sending through Re-enable), depending on what rules are satisfied.",
+                        "enum": [
+                          "Disable",
+                          "Re-enable"
+                        ]
+                      }
+                    }
+                  },
+                  "maxItems": 10000
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/docs": {
+      "get": {
+        "summary": "Documentation",
+        "description": "### Get the documentation for the API.\n\nThis endpoint serves the HTML content of the API documentation, generated using\nReDoc. The documentation provides details about the available endpoints,\nrequest/response formats, and other relevant information for developers using the\nAPI.\n\n_NOTE: This endpoint is intended for human consumption and is not designed for\nprogrammatic access._",
+        "operationId": "resources.docs.RedocResource.on_get",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "A successful response returning HTML content",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "General"
+        ]
+      }
+    },
+    "/status": {
+      "get": {
+        "summary": "API Status",
+        "description": "Check the status of the API to ensure it is reachable and operational.",
+        "operationId": "resources.status.Status.on_get",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "API is reachable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "ok"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "General"
+        ]
+      }
+    },
+    "/offers": {
+      "get": {
+        "summary": "List Offers",
+        "description": "List Offers.",
+        "operationId": "resources.offers.Offers.on_get",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OfferID"
+          },
+          {
+            "$ref": "#/components/parameters/OfferIDIn"
+          },
+          {
+            "name": "status",
+            "description": "Only include offers with this status.",
+            "in": "query",
+            "required": false,
+            "example": "buyable",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "buyable",
+                "not_buyable",
+                "disabled_by_seller",
+                "disabled_by_takealot"
+              ]
+            }
+          },
+          {
+            "name": "offer_id__gt",
+            "description": "Only include offers with IDs greater than this value.",
+            "in": "query",
+            "required": false,
+            "example": 1000000,
+            "schema": {
+              "$ref": "#/components/schemas/OfferID"
+            }
+          },
+          {
+            "name": "offer_id__lt",
+            "description": "Only include offers with IDs less than this value.",
+            "in": "query",
+            "required": false,
+            "example": 2000000,
+            "schema": {
+              "$ref": "#/components/schemas/OfferID"
+            }
+          },
+          {
+            "name": "sku",
+            "description": "Only include offers with this SKU.",
+            "in": "query",
+            "required": false,
+            "example": "SKU-ABC123",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "barcode",
+            "description": "Only include offers with this barcode.",
+            "in": "query",
+            "required": false,
+            "example": "MPTALX12345678-9",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/OfferFields"
+          },
+          {
+            "$ref": "#/components/parameters/OfferExpands"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/ContinuationToken"
+          },
+          {
+            "name": "order_by",
+            "description": "Order the results by these fields. Prefix with '-' for descending order.",
+            "in": "query",
+            "required": false,
+            "example": "-offer_id",
+            "schema": {
+              "type": "string",
+              "minimum": 1,
+              "enum": [
+                "offer_id",
+                "-offer_id"
+              ],
+              "default": "offer_id"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IncludeCount"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/ListOffersResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenErrorResponse"
+          },
+          "4XX": {
+            "$ref": "#/components/responses/ValidationErrorResponse"
+          },
+          "5XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "default": {
+            "$ref": "#/components/responses/DefaultErrorResponse"
+          }
+        },
+        "tags": [
+          "Offers"
+        ]
+      },
+      "post": {
+        "summary": "Create offer",
+        "description": "Create a new offer.",
+        "operationId": "resources.offers.Offers.on_post",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OfferFields"
+          },
+          {
+            "$ref": "#/components/parameters/OfferExpands"
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/CreateOfferRequest"
+        },
+        "responses": {
+          "201": {
+            "description": "Offer created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Offer"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenErrorResponse"
+          },
+          "4XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "5XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "default": {
+            "$ref": "#/components/responses/DefaultErrorResponse"
+          }
+        },
+        "tags": [
+          "Offers"
+        ]
+      }
+    },
+    "/offers/{offer_id}": {
+      "get": {
+        "summary": "get offer by ID",
+        "description": "Get an offer by its ID.",
+        "operationId": "resources.offers.Offer.on_get",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OfferIDPath"
+          },
+          {
+            "$ref": "#/components/parameters/OfferFields"
+          },
+          {
+            "$ref": "#/components/parameters/OfferExpands"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/GetOfferResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenErrorResponse"
+          },
+          "4XX": {
+            "$ref": "#/components/responses/ValidationErrorResponse"
+          },
+          "5XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "default": {
+            "$ref": "#/components/responses/DefaultErrorResponse"
+          }
+        },
+        "tags": [
+          "Offers"
+        ]
+      },
+      "patch": {
+        "summary": "update offer by ID",
+        "description": "Update an offer by its ID.",
+        "operationId": "resources.offers.Offer.on_patch",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OfferIDPath"
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/UpdateOfferRequest"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/GetOfferResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenErrorResponse"
+          },
+          "4XX": {
+            "$ref": "#/components/responses/ValidationErrorResponse"
+          },
+          "5XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "default": {
+            "$ref": "#/components/responses/DefaultErrorResponse"
+          }
+        },
+        "tags": [
+          "Offers"
+        ]
+      }
+    },
+    "/offers/by_sku/{sku}": {
+      "get": {
+        "summary": "get offer by sku",
+        "description": "Get an offer by its sku.",
+        "operationId": "resources.offers.OfferBySku.on_get",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SKU"
+          },
+          {
+            "$ref": "#/components/parameters/OfferFields"
+          },
+          {
+            "$ref": "#/components/parameters/OfferExpands"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/GetOfferResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenErrorResponse"
+          },
+          "4XX": {
+            "$ref": "#/components/responses/ValidationErrorResponse"
+          },
+          "5XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "default": {
+            "$ref": "#/components/responses/DefaultErrorResponse"
+          }
+        },
+        "tags": [
+          "Offers"
+        ]
+      },
+      "patch": {
+        "summary": "update offer by sku",
+        "description": "Update an offer by its sku.",
+        "operationId": "resources.offers.OfferBySku.on_patch",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SKU"
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/UpdateOfferRequest"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/GetOfferResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenErrorResponse"
+          },
+          "4XX": {
+            "$ref": "#/components/responses/ValidationErrorResponse"
+          },
+          "5XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "default": {
+            "$ref": "#/components/responses/DefaultErrorResponse"
+          }
+        },
+        "tags": [
+          "Offers"
+        ]
+      }
+    },
+    "/offers/by_barcode/{barcode}": {
+      "get": {
+        "summary": "get offer by barcode",
+        "description": "Get an offer by its barcode.",
+        "operationId": "resources.offers.OfferByBarcode.on_get",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Barcode"
+          },
+          {
+            "$ref": "#/components/parameters/OfferFields"
+          },
+          {
+            "$ref": "#/components/parameters/OfferExpands"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/GetOfferResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenErrorResponse"
+          },
+          "4XX": {
+            "$ref": "#/components/responses/ValidationErrorResponse"
+          },
+          "5XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "default": {
+            "$ref": "#/components/responses/DefaultErrorResponse"
+          }
+        },
+        "tags": [
+          "Offers"
+        ]
+      },
+      "patch": {
+        "summary": "update offer by barcode",
+        "description": "Update an offer by its barcode.",
+        "operationId": "resources.offers.OfferByBarcode.on_patch",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Barcode"
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/UpdateOfferRequest"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/GetOfferResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenErrorResponse"
+          },
+          "4XX": {
+            "$ref": "#/components/responses/ValidationErrorResponse"
+          },
+          "5XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "default": {
+            "$ref": "#/components/responses/DefaultErrorResponse"
+          }
+        },
+        "tags": [
+          "Offers"
+        ]
+      }
+    },
+    "/offers/batch": {
+      "post": {
+        "summary": "create offer batch",
+        "description": "Create an offer batch .",
+        "operationId": "resources.offers.OffersBatch.on_post",
+        "requestBody": {
+          "$ref": "#/components/requestBodies/CreateOfferBatchRequest"
+        },
+        "responses": {
+          "201": {
+            "description": "Offer Batch created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "batch_id": {
+                      "type": "integer"
+                    },
+                    "status": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenErrorResponse"
+          },
+          "4XX": {
+            "$ref": "#/components/responses/ValidationErrorResponse"
+          },
+          "5XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "default": {
+            "$ref": "#/components/responses/DefaultErrorResponse"
+          }
+        },
+        "tags": [
+          "Offers"
+        ]
+      }
+    },
+    "/offers/batch/{batch_id}": {
+      "get": {
+        "summary": "get offer batch by ID",
+        "description": "Get an offer batch by its ID.",
+        "operationId": "resources.offers.OffersBatch.on_get",
+        "parameters": [
+          {
+            "name": "batch_id",
+            "description": "The unique identifier of the offer batch.",
+            "in": "path",
+            "required": true,
+            "example": 98765,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/GetOfferBatchResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenErrorResponse"
+          },
+          "4XX": {
+            "$ref": "#/components/responses/ValidationErrorResponse"
+          },
+          "5XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "default": {
+            "$ref": "#/components/responses/DefaultErrorResponse"
+          }
+        },
+        "tags": [
+          "Offers"
+        ]
+      }
+    },
+    "/sales": {
+      "get": {
+        "summary": "List Sales",
+        "description": "List all your sales.",
+        "operationId": "resources.sales.Sales.on_get",
+        "parameters": [
+          {
+            "name": "order_id",
+            "description": "Filter sales by order ID.",
+            "in": "query",
+            "required": false,
+            "example": 9876543,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "order_date__lte",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "required": false,
+            "example": "2025-12-31",
+            "description": "Paired with order_date__gte, together forming an inclusive daterange for order_date, in SAST."
+          },
+          {
+            "name": "order_date__gte",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "required": false,
+            "example": "2025-01-01",
+            "description": "Paired with order_date__lte, together forming an inclusive daterange for order_date, in SAST."
+          },
+          {
+            "name": "stock_source_region",
+            "description": "Filter sales by the region from which the stock was sourced.",
+            "in": "query",
+            "required": false,
+            "example": "JHB",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "cpt",
+                "CPT",
+                "jhb",
+                "JHB",
+                "dbn",
+                "DBN"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "example": 50,
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "minimum": 1,
+              "maximum": 100
+            },
+            "description": "The number of sales per page."
+          },
+          {
+            "$ref": "#/components/parameters/SaleFields"
+          },
+          {
+            "$ref": "#/components/parameters/ContinuationToken"
+          },
+          {
+            "$ref": "#/components/parameters/IncludeCount"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/ListSalesResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenErrorResponse"
+          },
+          "4XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "5XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "default": {
+            "$ref": "#/components/responses/DefaultErrorResponse"
+          }
+        },
+        "tags": [
+          "Sales"
+        ]
+      }
+    },
+    "/transactions": {
+      "get": {
+        "summary": "List Transactions",
+        "description": "List transactions.\n\nThis endpoint allows you to retrieve a list of transactions based on various filters.\n\nThe transactions are returned in descending order of their `transaction_id`, meaning\nthe most recent transactions will be listed first.\n\n**Note**: The maximum allowable date range is 180 days, and the default will show the last 30 days.",
+        "operationId": "resources.transactions.Transactions.on_get",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/TransactionTypeIn"
+          },
+          {
+            "name": "created_at__gte",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "required": false,
+            "example": "2025-01-01T00:00:00+02:00",
+            "description": "Default: now - 30 days\n\nThe transaction `created_at` must be greater than or equal to this value. (The start date for the query).\n\nMust not be in the future."
+          },
+          {
+            "name": "created_at__lte",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "required": false,
+            "example": "2025-01-31T23:59:59+02:00",
+            "description": "Default: now\n\nThe transaction `created_at` must be less than or equal to this value. (The end date for the query).\n\nMust not be in the future."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "example": 50,
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "minimum": 1,
+              "maximum": 100
+            },
+            "description": "The number of transactions per page."
+          },
+          {
+            "$ref": "#/components/parameters/TransactionFields"
+          },
+          {
+            "$ref": "#/components/parameters/TransactionExpands"
+          },
+          {
+            "$ref": "#/components/parameters/ContinuationToken"
+          },
+          {
+            "$ref": "#/components/parameters/IncludeCount"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/ListTransactionsResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenErrorResponse"
+          },
+          "4XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "5XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "default": {
+            "$ref": "#/components/responses/DefaultErrorResponse"
+          }
+        },
+        "tags": [
+          "Transactions"
+        ]
+      }
+    },
+    "/balances": {
+      "get": {
+        "summary": "Get disbursement information",
+        "description": "Retrieves disbursement information for sellers",
+        "operationId": "resources.balances.Balances.on_get",
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisbursementInformation"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenErrorResponse"
+          },
+          "4XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "5XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "default": {
+            "$ref": "#/components/responses/DefaultErrorResponse"
+          }
+        },
+        "tags": [
+          "Transactions"
+        ]
+      }
+    },
+    "/shipments": {
+      "get": {
+        "summary": "List Shipments",
+        "description": "List shipments.",
+        "operationId": "resources.shipments.Shipments.on_get",
+        "parameters": [
+          {
+            "name": "shipment_id",
+            "description": "Filter shipments by shipment ID.",
+            "in": "query",
+            "required": false,
+            "example": 12345,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "shipment_id__lt",
+            "description": "Filter shipments with shipment ID less than this value.",
+            "in": "query",
+            "required": false,
+            "example": 20000,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "shipment_id__gt",
+            "description": "Filter shipments with shipment ID greater than this value.",
+            "in": "query",
+            "required": false,
+            "example": 10000,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "shipment_id__in",
+            "description": "Filter shipments with shipment IDs in this list.",
+            "in": "query",
+            "required": false,
+            "example": [
+              12345,
+              12346,
+              12347
+            ],
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            }
+          },
+          {
+            "name": "shipment_type__in",
+            "description": "Filter shipments with shipment types in this list.",
+            "in": "query",
+            "required": false,
+            "example": [
+              "replenishment",
+              "customer_order"
+            ],
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ShipmentTypeEnum"
+              }
+            }
+          },
+          {
+            "name": "shipped",
+            "description": "Filter shipments by shipped status.",
+            "in": "query",
+            "required": false,
+            "example": true,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "cancelled",
+            "description": "Filter shipments by cancelled status.",
+            "in": "query",
+            "required": false,
+            "example": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "order_by",
+            "description": "Order the results by these fields. Prefix with '-' for descending order.",
+            "in": "query",
+            "required": false,
+            "example": "-shipment_id",
+            "schema": {
+              "type": "string",
+              "minimum": 1,
+              "enum": [
+                "shipment_id",
+                "-shipment_id"
+              ],
+              "default": "-shipment_id"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/ShipmentFields"
+          },
+          {
+            "$ref": "#/components/parameters/ShipmentExpands"
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/IncludeCount"
+          },
+          {
+            "$ref": "#/components/parameters/ContinuationToken"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/ListShipmentsResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenErrorResponse"
+          },
+          "4XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "5XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "default": {
+            "$ref": "#/components/responses/DefaultErrorResponse"
+          }
+        },
+        "tags": [
+          "Shipments"
+        ]
+      }
+    },
+    "/shipments/{shipment_id}": {
+      "get": {
+        "summary": "Get a Shipment",
+        "description": "Get a shipment by shipment ID.",
+        "operationId": "resources.shipments.Shipment.on_get",
+        "parameters": [
+          {
+            "name": "shipment_id",
+            "description": "The unique identifier of the shipment.",
+            "in": "path",
+            "required": true,
+            "example": 12345,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/ShipmentFields"
+          },
+          {
+            "$ref": "#/components/parameters/ShipmentExpands"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/GetShipmentResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenErrorResponse"
+          },
+          "4XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "5XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "default": {
+            "$ref": "#/components/responses/DefaultErrorResponse"
+          }
+        },
+        "tags": [
+          "Shipments"
+        ]
+      }
+    },
+    "/returns": {
+      "get": {
+        "summary": "List Returns",
+        "description": "List Seller Returns, including related transactions and outcomes.",
+        "operationId": "resources.returns.Returns.on_get",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ReturnFields"
+          },
+          {
+            "$ref": "#/components/parameters/ReturnExpands"
+          },
+          {
+            "name": "return_reason__in",
+            "description": "Only include returns with these reasons.",
+            "in": "query",
+            "required": false,
+            "example": [
+              "defective_or_damaged",
+              "not_what_i_ordered"
+            ],
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ReturnReasonEnum"
+              }
+            }
+          },
+          {
+            "name": "outcome__in",
+            "description": "Only include returns with these outcomes.",
+            "in": "query",
+            "required": false,
+            "example": [
+              "sellable_stock",
+              "removal_order"
+            ],
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ReturnOutcomeEnum"
+              }
+            }
+          },
+          {
+            "name": "return_region__in",
+            "description": "List returns processed in these regions.",
+            "in": "query",
+            "required": false,
+            "example": [
+              "JHB",
+              "CPT"
+            ],
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/RegionQueryEnum"
+              }
+            }
+          },
+          {
+            "name": "return_date__gte",
+            "description": "Only returns from this date",
+            "in": "query",
+            "required": false,
+            "example": "2025-01-01",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "return_date__lte",
+            "description": "Only returns until this date",
+            "in": "query",
+            "required": false,
+            "example": "2025-12-31",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "order_id",
+            "description": "Filter returns by order ID.",
+            "in": "query",
+            "required": false,
+            "example": 9876543,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "return_reference_number",
+            "description": "Filter returns by the original customer return reference number (RRN).",
+            "in": "query",
+            "required": false,
+            "example": "RRN-QBYQ7-E67K",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sku",
+            "description": "Filter returns by SKU.",
+            "in": "query",
+            "required": false,
+            "example": "SKU-ABC123",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/LimitTen"
+          },
+          {
+            "$ref": "#/components/parameters/ContinuationToken"
+          },
+          {
+            "name": "order_by",
+            "description": "Order the results by these fields. Prefix with '-' for descending order.",
+            "in": "query",
+            "required": false,
+            "example": "-return_date",
+            "schema": {
+              "type": "string",
+              "minimum": 1,
+              "enum": [
+                "return_date",
+                "-return_date"
+              ],
+              "default": "-return_date"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IncludeCount"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/ListReturnsResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenErrorResponse"
+          },
+          "4XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "5XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "default": {
+            "$ref": "#/components/responses/DefaultErrorResponse"
+          }
+        },
+        "tags": [
+          "Returns"
+        ]
+      }
+    },
+    "/returns/{return_id}": {
+      "get": {
+        "summary": "Get Return by ID",
+        "description": "Get a return by Return ID.",
+        "operationId": "resources.returns.Return.on_get",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ReturnIDPath"
+          },
+          {
+            "$ref": "#/components/parameters/ReturnFields"
+          },
+          {
+            "$ref": "#/components/parameters/ReturnExpands"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/GetReturnResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenErrorResponse"
+          },
+          "4XX": {
+            "$ref": "#/components/responses/ValidationErrorResponse"
+          },
+          "5XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "default": {
+            "$ref": "#/components/responses/DefaultErrorResponse"
+          }
+        },
+        "tags": [
+          "Returns"
+        ]
+      }
+    },
+    "/facilities/get_enabled_regions": {
+      "get": {
+        "summary": "List the enabled regions for facilities",
+        "description": "Get the enabled region codes and ids for facilities.",
+        "operationId": "resources.facilities.EnabledRegions.on_get",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/ListEnabledRegionsResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenErrorResponse"
+          },
+          "4XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "5XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "default": {
+            "$ref": "#/components/responses/DefaultErrorResponse"
+          }
+        },
+        "tags": [
+          "Facilities"
+        ]
+      }
+    },
+    "/seller": {
+      "get": {
+        "summary": "Get seller information",
+        "description": "Get information about the logged-in seller.",
+        "operationId": "resources.seller.Seller.on_get",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/SellerFields"
+          },
+          {
+            "$ref": "#/components/parameters/SellerExpands"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Seller"
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenErrorResponse"
+          },
+          "4XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "5XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "default": {
+            "$ref": "#/components/responses/DefaultErrorResponse"
+          }
+        },
+        "tags": [
+          "Seller"
+        ]
+      }
+    }
+  }
+}
