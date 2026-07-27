@@ -7,6 +7,7 @@ interface StoreAuth {
   id: number;
   store_name: string;
   api_key: string;
+  api_base_url: string;
   api_secret: string;
   access_token: string;
   token_expires_at: string;
@@ -19,6 +20,7 @@ interface StoreAuth {
 const emptyForm = {
   store_name: '',
   api_key: '',
+  api_base_url: '',
 };
 
 export default function StoreAuthPage() {
@@ -60,6 +62,7 @@ export default function StoreAuthPage() {
     setForm({
       store_name: s.store_name,
       api_key: s.api_key,
+      api_base_url: s.api_base_url || '',
     });
     setEditingId(s.id);
     setError('');
@@ -131,15 +134,22 @@ export default function StoreAuthPage() {
       });
       const json = await res.json();
       if (res.ok) {
-        const errorMsg = json.errors?.length ? `\n\n详细错误：\n${json.errors.join('\n')}` : '';
         const hasData = (json.synced_data?.products_synced || 0) > 0 || (json.synced_data?.orders_synced || 0) > 0;
-        setSyncResult({ store_id: id, message: json.message + errorMsg, success: hasData });
+        let msg = json.message;
+        if (json.errors?.length) msg += `\n\n详细错误：\n${json.errors.join('\n')}`;
+        if (json.debug?.length) {
+          msg += `\n\n--- API 调试信息 ---\n`;
+          msg += json.debug.map((d: { url: string; status: number; body: string }) =>
+            `[${d.status}] ${d.url}\n响应: ${d.body.slice(0, 200)}`
+          ).join('\n\n');
+        }
+        setSyncResult({ store_id: id, message: msg, success: hasData });
         fetchStores();
       } else {
-        setSyncResult({ store_id: id, message: json.error || '\u540c\u6b65\u5931\u8d25', success: false });
+        setSyncResult({ store_id: id, message: json.error || '同步失败', success: false });
       }
     } catch {
-      setSyncResult({ store_id: id, message: '\u7f51\u7edc\u9519\u8bef', success: false });
+      setSyncResult({ store_id: id, message: '网络错误', success: false });
     } finally {
       setSyncingId(null);
     }
@@ -373,6 +383,17 @@ export default function StoreAuthPage() {
                 />
                 <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
                   登录 Takealot Seller Portal → 设置 → API 管理中获取
+                </div>
+              </div>
+              <div className="form-group">
+                <label>API 地址（可选）</label>
+                <input
+                  value={form.api_base_url}
+                  onChange={(e) => setForm({ ...form, api_base_url: e.target.value })}
+                  placeholder="https://seller-api.takealot.com"
+                />
+                <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
+                  默认 https://seller-api.takealot.com，如 Takealot 提供其他地址请修改
                 </div>
               </div>
             </div>

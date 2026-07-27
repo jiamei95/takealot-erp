@@ -92,6 +92,7 @@ function initSchema(db: Database.Database): void {
       store_name TEXT NOT NULL,
       api_key TEXT NOT NULL DEFAULT '',
       api_secret TEXT NOT NULL DEFAULT '',
+      api_base_url TEXT NOT NULL DEFAULT 'https://seller-api.takealot.com',
       access_token TEXT DEFAULT '',
       token_expires_at TEXT DEFAULT '',
       auth_status TEXT NOT NULL DEFAULT 'disconnected',
@@ -100,4 +101,10 @@ function initSchema(db: Database.Database): void {
       updated_at TEXT DEFAULT (datetime('now'))
     );
   `);
+
+  // Migration: add api_base_url column if not exists
+  const columns = db.prepare('PRAGMA table_info(store_auth)').all() as { name: string }[];
+  if (!columns.some(c => c.name === 'api_base_url')) {
+    db.exec(`ALTER TABLE store_auth ADD COLUMN api_base_url TEXT NOT NULL DEFAULT 'https://seller-api.takealot.com'`);
+  }
 }
