@@ -171,18 +171,22 @@ export default function StoreAuthPage() {
       <div className="card" style={{ marginBottom: 24, borderLeft: '3px solid #3b82f6' }}>
         <div style={{ padding: '16px 20px' }}>
           <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: '#1e40af' }}>
-            Takealot API {'\u6388\u6743\u6307\u5357'}
+            Takealot Marketplace API 授权指南
           </h3>
           <div style={{ fontSize: 13, color: '#64748b', lineHeight: 1.8 }}>
-            <p>{'\u8981\u8fde\u63a5 Takealot \u5b98\u65b9 API\uff0c\u60a8\u9700\u8981\uff1a'}</p>
+            <p>要连接 Takealot 官方 API，您需要：</p>
             <ol style={{ paddingLeft: 20, margin: '8px 0' }}>
-              <li>{'\u767b\u5f55 Takealot Seller Portal (seller.takealot.com)'}</li>
-              <li>{'\u8fdb\u5165 \u201c\u8bbe\u7f6e \u2192 API \u7ba1\u7406\u201d \u9875\u9762'}</li>
-              <li>{'\u590d\u5236\u60a8\u7684 API Key'}</li>
-              <li>{'\u5c06 API Key \u586b\u5199\u5230\u4e0b\u65b9\u8868\u5355\u4e2d\u5b8c\u6210\u6388\u6743'}</li>
+              <li>登录 Takealot Seller Portal (seller.takealot.com)</li>
+              <li>进入 "设置 → API 管理" 页面</li>
+              <li>复制您的 API Key</li>
+              <li>将 API Key 填写到下方表单中完成授权</li>
             </ol>
-            <p style={{ fontSize: 12, color: '#94a3b8' }}>
-              {'\u2139 \u6388\u6743\u540e\u70b9\u51fb\u201c\u540c\u6b65\u6570\u636e\u201d\u5373\u53ef\u4ece Takealot \u62c9\u53d6\u4ea7\u54c1\u3001\u8ba2\u5355\u548c\u5e93\u5b58\u6570\u636e\u3002'}
+            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 8 }}>
+              <p>API 基础地址：<code style={{ background: '#f1f5f9', padding: '2px 6px', borderRadius: 4 }}>https://marketplace-api.takealot.com/v1</code></p>
+              <p>同步接口：/offers（产品）、/sales（订单）、/transactions（交易明细）</p>
+            </div>
+            <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 8 }}>
+              授权后点击"同步数据"即可从 Takealot 拉取产品、订单和交易数据。
             </p>
           </div>
         </div>
@@ -390,10 +394,10 @@ export default function StoreAuthPage() {
                 <input
                   value={form.api_base_url}
                   onChange={(e) => setForm({ ...form, api_base_url: e.target.value })}
-                  placeholder="https://seller-api.takealot.com"
+                  placeholder="https://marketplace-api.takealot.com/v1"
                 />
                 <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
-                  默认 https://seller-api.takealot.com，如 Takealot 提供其他地址请修改
+                  默认 https://marketplace-api.takealot.com/v1，如 Takealot 提供其他地址请修改
                 </div>
               </div>
             </div>

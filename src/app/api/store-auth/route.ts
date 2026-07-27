@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const baseUrl = api_base_url || 'https://seller-api.takealot.com';
+  const baseUrl = api_base_url || 'https://marketplace-api.takealot.com/v1';
 
   // Check if store already exists
   const existing = db
