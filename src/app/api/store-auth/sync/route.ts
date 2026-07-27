@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { jsonResponse, errorResponse, optionsResponse } from '@/lib/cors';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -272,14 +273,14 @@ export async function POST(request: NextRequest) {
 
     const auth = db.prepare('SELECT * FROM store_auth WHERE id = ?').get(store_id) as Record<string, unknown> | undefined;
     if (!auth) {
-      return NextResponse.json({ error: '未找到该店铺授权信息' }, { status: 404 });
+      return errorResponse('未找到该店铺授权信息', request, 404);
     }
 
     const apiKey = (auth.api_key as string) || '';
     const baseUrl = (auth.api_base_url as string) || DEFAULT_BASE_URL;
 
     if (!apiKey) {
-      return NextResponse.json({ error: 'API Key 未配置，请先编辑授权信息填写 API Key' }, { status: 400 });
+      return errorResponse('API Key 未配置，请先编辑授权信息填写 API Key', request, 400);
     }
 
     const debug: Array<{ url: string; status: number; body?: string }> = [];
@@ -312,9 +313,13 @@ export async function POST(request: NextRequest) {
       debug: debug.slice(-10),
     };
 
-    return NextResponse.json(result);
+    return jsonResponse(result, request);
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({ error: `同步失败: ${msg}` }, { status: 500 });
+    return errorResponse(`同步失败: ${msg}`, request, 500);
   }
+}
+
+export async function OPTIONS(request: Request) {
+  return optionsResponse(request);
 }

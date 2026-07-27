@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { jsonResponse, errorResponse, optionsResponse } from '@/lib/cors';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,12 +10,12 @@ export async function PUT(request: NextRequest) {
   const { id, status } = body;
 
   if (!id || !status) {
-    return NextResponse.json({ error: 'ID and status are required' }, { status: 400 });
+    return errorResponse('ID and status are required', request, 400);
   }
 
   const validStatuses = ['pending', 'shipped', 'delivered'];
   if (!validStatuses.includes(status)) {
-    return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
+    return errorResponse('Invalid status', request, 400);
   }
 
   try {
@@ -27,10 +28,10 @@ export async function PUT(request: NextRequest) {
       WHERE poi.po_id = ?
     `).all(id);
 
-    return NextResponse.json({ purchase_order: { ...po, items } });
+    return jsonResponse({ purchase_order: { ...po, items } }, request);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return errorResponse(message, request, 500);
   }
 }
 
@@ -40,15 +41,19 @@ export async function DELETE(request: NextRequest) {
   const id = searchParams.get('id');
 
   if (!id) {
-    return NextResponse.json({ error: 'PO ID is required' }, { status: 400 });
+    return errorResponse('PO ID is required', request, 400);
   }
 
   try {
     db.prepare('DELETE FROM purchase_order_items WHERE po_id = ?').run(id);
     db.prepare('DELETE FROM purchase_orders WHERE id = ?').run(id);
-    return NextResponse.json({ success: true });
+    return jsonResponse({ success: true }, request);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return errorResponse(message, request, 500);
   }
+}
+
+export async function OPTIONS(request: Request) {
+  return optionsResponse(request);
 }

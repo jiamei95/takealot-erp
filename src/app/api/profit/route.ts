@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { jsonResponse, optionsResponse } from '@/lib/cors';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
     ORDER BY sales DESC
   `).all(...params);
 
-  return NextResponse.json({
+  return jsonResponse({
     total_orders: stats.total_orders || 0,
     total_sales: +totalSales.toFixed(2),
     total_profit: +totalProfit.toFixed(2),
@@ -55,5 +56,9 @@ export async function GET(request: NextRequest) {
     total_storage_fees: +(stats.total_storage_fees || 0).toFixed(2),
     total_cost: +(stats.total_cost || 0).toFixed(2),
     store_stats: storeStats,
-  });
+  }, request);
+}
+
+export async function OPTIONS(request: Request) {
+  return optionsResponse(request);
 }

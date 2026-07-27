@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { jsonResponse, errorResponse, optionsResponse } from '@/lib/cors';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
     return { ...poRecord, items };
   });
 
-  return NextResponse.json({ purchase_orders: result, total, page, page_size: pageSize });
+  return jsonResponse({ purchase_orders: result, total, page, page_size: pageSize }, request);
 }
 
 export async function POST(request: NextRequest) {
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
   const { po_number, notes, items } = body;
 
   if (!po_number || !items || !Array.isArray(items) || items.length === 0) {
-    return NextResponse.json({ error: 'PO number and items are required' }, { status: 400 });
+    return errorResponse('PO number and items are required', request, 400);
   }
 
   try {
@@ -58,12 +59,16 @@ export async function POST(request: NextRequest) {
       WHERE poi.po_id = ?
     `).all(poId);
 
-    return NextResponse.json({ purchase_order: { ...po, items: poItems } }, { status: 201 });
+    return jsonResponse({ purchase_order: { ...po, items: poItems } }, request, 201);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     if (message.includes('UNIQUE constraint failed')) {
-      return NextResponse.json({ error: 'PO number already exists' }, { status: 409 });
+      return errorResponse('PO number already exists', request, 409);
     }
-    return NextResponse.json({ error: message }, { status: 500 });
+    return errorResponse(message, request, 500);
   }
+}
+
+export async function OPTIONS(request: Request) {
+  return optionsResponse(request);
 }

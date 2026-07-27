@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { jsonResponse, optionsResponse } from '@/lib/cors';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,5 +47,9 @@ export async function GET(request: NextRequest) {
     LIMIT ? OFFSET ?
   `).all(...params, pageSize, offset);
 
-  return NextResponse.json({ orders, total, page, page_size: pageSize });
+  return jsonResponse({ orders, total, page, page_size: pageSize }, request);
+}
+
+export async function OPTIONS(request: Request) {
+  return optionsResponse(request);
 }

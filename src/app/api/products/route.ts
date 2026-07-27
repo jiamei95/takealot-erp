@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { jsonResponse, errorResponse, optionsResponse } from '@/lib/cors';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
   const total = (db.prepare(`SELECT COUNT(*) as cnt FROM products p ${where}`).get(...params) as { cnt: number }).cnt;
   const products = db.prepare(`SELECT p.* FROM products p ${where} ORDER BY p.id DESC LIMIT ? OFFSET ?`).all(...params, pageSize, offset);
 
-  return NextResponse.json({ products, total, page, page_size: pageSize });
+  return jsonResponse({ products, total, page, page_size: pageSize }, request);
 }
 
 export async function POST(request: NextRequest) {
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
   const { sku, name, cost_price, selling_price, image_url, takealot_product_id } = body;
 
   if (!sku || !name) {
-    return NextResponse.json({ error: 'SKU and name are required' }, { status: 400 });
+    return errorResponse('SKU and name are required', request, 400);
   }
 
   try {
@@ -40,12 +41,16 @@ export async function POST(request: NextRequest) {
     ).run(sku, name, cost_price || 0, selling_price || 0, image_url || '', takealot_product_id || '');
 
     const product = db.prepare('SELECT * FROM products WHERE id = ?').get(result.lastInsertRowid);
-    return NextResponse.json({ product }, { status: 201 });
+    return jsonResponse({ product }, request, 201);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     if (message.includes('UNIQUE constraint failed')) {
-      return NextResponse.json({ error: 'SKU already exists' }, { status: 409 });
+      return errorResponse('SKU already exists', request, 409);
     }
-    return NextResponse.json({ error: message }, { status: 500 });
+    return errorResponse(message, request, 500);
   }
+}
+
+export async function OPTIONS(request: Request) {
+  return optionsResponse(request);
 }
