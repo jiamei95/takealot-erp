@@ -74,11 +74,13 @@ export default function StoreAuthPage() {
 
   const handleSave = async () => {
     if (!form.store_name) {
-      setError('\u5e97\u94fa\u540d\u79f0\u4e3a\u5fc5\u586b\u9879');
+      setError('店铺名称为必填项');
       return;
     }
-    if (!form.api_key) {
-      setError('API Key \u4e3a\u5fc5\u586b\u9879');
+    const hasKeyAndSecret = form.api_key && form.api_secret;
+    const hasToken = form.access_token;
+    if (!hasKeyAndSecret && !hasToken) {
+      setError('请至少填写 API Key + API Secret 或 Access Token');
       return;
     }
     setSaving(true);
@@ -369,28 +371,31 @@ export default function StoreAuthPage() {
                 />
               </div>
               <div className="form-group">
-                <label>API Key *</label>
+                <label>API Key <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 12 }}>（方式一：与 Secret 配合使用）</span></label>
                 <input
                   value={form.api_key}
                   onChange={(e) => setForm({ ...form, api_key: e.target.value })}
-                  placeholder={'\u4ece Takealot Seller Portal \u83b7\u53d6'}
+                  placeholder="从 Takealot Seller Portal 获取"
                 />
               </div>
               <div className="form-group">
-                <label>API Secret</label>
+                <label>API Secret <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 12 }}>（方式一）</span></label>
                 <input
                   type="password"
                   value={form.api_secret}
                   onChange={(e) => setForm({ ...form, api_secret: e.target.value })}
-                  placeholder={'\u4ece Takealot Seller Portal \u83b7\u53d6'}
+                  placeholder="从 Takealot Seller Portal 获取"
                 />
               </div>
+              <div style={{ padding: '8px 12px', background: '#f1f5f9', borderRadius: 6, fontSize: 12, color: '#64748b', margin: '4px 0' }}>
+                方式一（API Key + Secret）和方式二（Access Token）二选一即可
+              </div>
               <div className="form-group">
-                <label>Access Token {'(\u53ef\u9009)'}</label>
+                <label>Access Token <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: 12 }}>（方式二：直接填写）</span></label>
                 <input
                   value={form.access_token}
                   onChange={(e) => setForm({ ...form, access_token: e.target.value })}
-                  placeholder={'\u82e5\u7559\u7a7a\u5c06\u81ea\u52a8\u751f\u6210'}
+                  placeholder="如有现成 Token 可直接填入"
                 />
               </div>
               <div className="form-group">

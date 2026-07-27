@@ -28,35 +28,24 @@ interface TakealotOrder {
   status: string;
 }
 
-async function getAccessToken(apiKey: string, apiSecret: string): Promise<string> {
-  const response = await fetch(`${TAKEALOT_API_BASE}/oauth/token`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      grant_type: 'client_credentials',
-      client_id: apiKey,
-      client_secret: apiSecret,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Takealot API 认证失败 (${response.status}): ${errorText}`);
+function buildHeaders(auth: { api_key: string; api_secret: string; access_token: string }) {
+  // Takealot Seller API 支持两种认证方式：
+  // 1. 使用 Access Token（Bearer）
+  // 2. 使用 API Key 直接认证
+  if (auth.access_token) {
+    return {
+      'Authorization': `Bearer ${auth.access_token}`,
+      'Content-Type': 'application/json',
+    };
   }
-
-  const data = await response.json();
-  return data.access_token;
+  return {
+    'Authorization': `Basic ${Buffer.from(`${auth.api_key}:${auth.api_secret}`).toString('base64')}`,
+    'Content-Type': 'application/json',
+  };
 }
 
-async function fetchProducts(accessToken: string): Promise<TakealotProduct[]> {
-  const response = await fetch(`${TAKEALOT_API_BASE}/v1/products`, {
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-  });
+async function fetchProducts(headers: Record<string, string>): Promise<TakealotProduct[]> {
+  const response = await fetch(`${TAKEALOT_API_BASE}/v1/products`, { headers });
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -64,16 +53,11 @@ async function fetchProducts(accessToken: string): Promise<TakealotProduct[]> {
   }
 
   const data = await response.json();
-  return data.products || data.data || [];
+  return Array.isArray(data) ? data : (data.products || data.data || []);
 }
 
-async function fetchOrders(accessToken: string): Promise<TakealotOrder[]> {
-  const response = await fetch(`${TAKEALOT_API_BASE}/v1/orders`, {
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-  });
+async function fetchOrders(headers: Record<string, string>): Promise<TakealotOrder[]> {
+  const response = await fetch(`${TAKEALOT_API_BASE}/v1/orders`, { headers });
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -81,7 +65,91 @@ async function fetchOrders(accessToken: string): Promise<TakealotOrder[]> {
   }
 
   const data = await response.json();
-  return data.orders || data.data || [];
+  return Array.isArray(data) ? data : (data.orders || data.data || []);
+}
+
+function upsertProducts(products: TakealotProduct[], storeName: string) {
+  const db = getDb();
+  const stmt = db.prepare(`
+    INSERT INTO products (sku, name, cost_price, selling_price, image_url, takealot_product_id, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+    ON CONFLICT(sku) DO UPDATE SET
+      name = excluded.name,
+      cost_price = excluded.cost_price,
+      selling_price = excluded.selling_price,
+      image_url = excluded.image_url,
+      takealot_product_id = excluded.takealot_product_id,
+      updated_at = datetime('now')
+  `);
+
+  let count = 0;
+  for (const p of products) {
+    if (!p.sku) continue;
+    stmt.run(
+      p.sku,
+      p.title || p.sku,
+      p.cost_price || 0,
+      p.selling_price || 0,
+      p.image_url || '',
+      p.product_id || '',
+    );
+    count++;
+  }
+  return count;
+}
+
+function upsertOrders(orders: TakealotOrder[], storeName: string) {
+  const db = getDb();
+
+  // Get store id
+  const store = db.prepare('SELECT id FROM stores WHERE name = ?').get(storeName) as { id: number } | undefined;
+  if (!store) return 0;
+
+  const stmt = db.prepare(`
+    INSERT INTO orders (order_number, order_date, product_id, quantity, selling_price, cost_price,
+      platform_commission, payment_fee, storage_fee, other_fees, profit, status, store_name, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+    ON CONFLICT(order_number) DO UPDATE SET
+      quantity = excluded.quantity,
+      selling_price = excluded.selling_price,
+      cost_price = excluded.cost_price,
+      platform_commission = excluded.platform_commission,
+      payment_fee = excluded.payment_fee,
+      storage_fee = excluded.storage_fee,
+      other_fees = excluded.other_fees,
+      profit = excluded.profit,
+      status = excluded.status
+  `);
+
+  let count = 0;
+  for (const o of orders) {
+    if (!o.order_number) continue;
+
+    // Find product by SKU
+    const product = db.prepare('SELECT id FROM products WHERE sku = ?').get(o.product_sku) as { id: number } | undefined;
+    const productId = product?.id || null;
+
+    const profit = (o.selling_price * o.quantity) - ((o.cost_price || 0) * o.quantity) -
+      (o.platform_commission || 0) - (o.payment_fee || 0) - (o.storage_fee || 0) - (o.other_fees || 0);
+
+    stmt.run(
+      o.order_number,
+      o.order_date,
+      productId,
+      o.quantity || 1,
+      o.selling_price || 0,
+      o.cost_price || 0,
+      o.platform_commission || 0,
+      o.payment_fee || 0,
+      o.storage_fee || 0,
+      o.other_fees || 0,
+      profit,
+      o.status || 'completed',
+      storeName,
+    );
+    count++;
+  }
+  return count;
 }
 
 export async function POST(request: Request) {
@@ -90,157 +158,77 @@ export async function POST(request: Request) {
   const { store_id } = body;
 
   if (!store_id) {
+    return NextResponse.json({ error: '缺少 store_id 参数' }, { status: 400 });
+  }
+
+  const auth = db.prepare('SELECT * FROM store_auth WHERE id = ?').get(store_id) as
+    { id: number; store_name: string; api_key: string; api_secret: string; access_token: string } | undefined;
+
+  if (!auth) {
+    return NextResponse.json({ error: '未找到该店铺授权信息' }, { status: 404 });
+  }
+
+  // 检查是否有有效的认证凭据（至少需要 api_key + api_secret 或 access_token）
+  const hasKeyAndSecret = auth.api_key && auth.api_secret;
+  const hasToken = auth.access_token;
+
+  if (!hasKeyAndSecret && !hasToken) {
     return NextResponse.json(
-      { error: '店铺 ID 为必填项' },
+      { error: 'API 凭据未配置。请编辑授权信息，填写 API Key + API Secret 或 Access Token' },
       { status: 400 }
     );
   }
-
-  const storeAuth = db
-    .prepare('SELECT * FROM store_auth WHERE id = ?')
-    .get(store_id) as Record<string, string> | undefined;
-
-  if (!storeAuth) {
-    return NextResponse.json(
-      { error: '店铺授权记录不存在' },
-      { status: 404 }
-    );
-  }
-
-  if (storeAuth.auth_status !== 'connected') {
-    return NextResponse.json(
-      { error: '店铺未授权，请先完成授权配置' },
-      { status: 400 }
-    );
-  }
-
-  const { api_key, api_secret, store_name } = storeAuth;
-
-  if (!api_key || !api_secret) {
-    return NextResponse.json(
-      { error: 'API Key 或 API Secret 未配置，请先编辑授权信息' },
-      { status: 400 }
-    );
-  }
-
-  const syncTime = new Date().toISOString().replace('T', ' ').substring(0, 19);
-  let productsSynced = 0;
-  let ordersSynced = 0;
 
   try {
-    // Step 1: Get access token from Takealot
-    const accessToken = await getAccessToken(api_key, api_secret);
+    const headers = buildHeaders(auth);
 
-    // Update access token in DB
-    db.prepare(`
-      UPDATE store_auth 
-      SET access_token = ?, token_expires_at = datetime('now', '+1 hour'), updated_at = datetime('now')
-      WHERE id = ?
-    `).run(accessToken, store_id);
+    // Fetch data from Takealot API
+    const [products, orders] = await Promise.all([
+      fetchProducts(headers).catch((e) => {
+        console.error('Failed to fetch products:', e.message);
+        return [];
+      }),
+      fetchOrders(headers).catch((e) => {
+        console.error('Failed to fetch orders:', e.message);
+        return [];
+      }),
+    ]);
 
-    // Step 2: Sync products
-    const products = await fetchProducts(accessToken);
-    const upsertProduct = db.prepare(`
-      INSERT INTO products (sku, name, cost_price, selling_price, image_url, takealot_product_id)
-      VALUES (?, ?, ?, ?, ?, ?)
-      ON CONFLICT(sku) DO UPDATE SET
-        name = excluded.name,
-        cost_price = excluded.cost_price,
-        selling_price = excluded.selling_price,
-        image_url = excluded.image_url,
-        takealot_product_id = excluded.takealot_product_id,
-        updated_at = datetime('now')
-    `);
+    // Upsert into database
+    const productsSynced = upsertProducts(products, auth.store_name);
+    const ordersSynced = upsertOrders(orders, auth.store_name);
 
-    for (const p of products) {
-      upsertProduct.run(
-        p.sku || '',
-        p.title || p.sku || '',
-        p.cost_price || 0,
-        p.selling_price || 0,
-        p.image_url || '',
-        p.product_id || ''
-      );
-      productsSynced++;
-    }
-
-    // Step 3: Sync orders
-    const orders = await fetchOrders(accessToken);
-    const upsertOrder = db.prepare(`
-      INSERT INTO orders (order_number, order_date, product_id, quantity, selling_price, cost_price,
-        platform_commission, payment_fee, storage_fee, other_fees, profit, status, store_name)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(order_number) DO UPDATE SET
-        status = excluded.status,
-        selling_price = excluded.selling_price,
-        quantity = excluded.quantity
-    `);
-
-    for (const o of orders) {
-      const product = db.prepare('SELECT id FROM products WHERE sku = ?').get(o.product_sku) as { id: number } | undefined;
-      const productId = product?.id || 0;
-      const revenue = o.selling_price * o.quantity;
-      const cost = (o.cost_price || 0) * o.quantity;
-      const profit = revenue - cost - (o.platform_commission || 0) - (o.payment_fee || 0) - (o.storage_fee || 0) - (o.other_fees || 0);
-
-      upsertOrder.run(
-        o.order_number,
-        o.order_date,
-        productId,
-        o.quantity,
-        o.selling_price,
-        o.cost_price || 0,
-        o.platform_commission || 0,
-        o.payment_fee || 0,
-        o.storage_fee || 0,
-        o.other_fees || 0,
-        +profit.toFixed(2),
-        o.status || 'completed',
-        store_name
-      );
-      ordersSynced++;
-    }
-
-    // Step 4: Auto-create store record if not exists
-    const existingStore = db.prepare('SELECT id FROM stores WHERE name = ?').get(store_name) as { id: number } | undefined;
-    if (!existingStore) {
-      db.prepare('INSERT INTO stores (name) VALUES (?)').run(store_name);
-    }
-
-    // Update sync time
-    db.prepare(`UPDATE store_auth SET last_sync_at = ?, updated_at = datetime('now') WHERE id = ?`).run(
-      syncTime,
-      store_id
-    );
+    // Update sync time and status
+    db.prepare(
+      `UPDATE store_auth SET last_sync_at = datetime('now'), auth_status = 'connected', updated_at = datetime('now') WHERE id = ?`
+    ).run(store_id);
 
     return NextResponse.json({
       success: true,
-      store_name,
-      sync_time: syncTime,
+      store_name: auth.store_name,
+      sync_time: new Date().toISOString(),
       synced_data: {
         products_synced: productsSynced,
         orders_synced: ordersSynced,
       },
-      message: `数据同步成功！从 ${store_name} 同步了 ${productsSynced} 个产品和 ${ordersSynced} 个订单。`,
+      message: `数据同步成功！同步了 ${productsSynced} 个产品和 ${ordersSynced} 个订单。`,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : '未知错误';
 
-    // If auth fails, mark as disconnected
-    if (errorMessage.includes('认证失败') || errorMessage.includes('401') || errorMessage.includes('403')) {
-      db.prepare(`UPDATE store_auth SET auth_status = 'disconnected', updated_at = datetime('now') WHERE id = ?`).run(store_id);
+    // If authentication fails, mark as disconnected
+    if (errorMessage.includes('401') || errorMessage.includes('403')) {
+      db.prepare(
+        `UPDATE store_auth SET auth_status = 'disconnected', updated_at = datetime('now') WHERE id = ?`
+      ).run(store_id);
+      return NextResponse.json(
+        { error: `认证失败，请检查 API 凭据是否正确。详细信息: ${errorMessage}` },
+        { status: 401 }
+      );
     }
 
     return NextResponse.json(
-      {
-        error: `同步失败: ${errorMessage}`,
-        store_name,
-        sync_time: syncTime,
-        synced_data: {
-          products_synced: productsSynced,
-          orders_synced: ordersSynced,
-        },
-      },
+      { error: `同步失败: ${errorMessage}` },
       { status: 500 }
     );
   }

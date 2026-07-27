@@ -24,7 +24,17 @@ export async function POST(request: Request) {
 
   if (!store_name) {
     return NextResponse.json(
-      { error: '\u5e97\u94fa\u540d\u79f0\u4e3a\u5fc5\u586b\u9879' },
+      { error: '店铺名称为必填项' },
+      { status: 400 }
+    );
+  }
+
+  // 检查是否至少有一种认证方式
+  const hasKeyAndSecret = api_key && api_secret;
+  const hasToken = access_token;
+  if (!hasKeyAndSecret && !hasToken) {
+    return NextResponse.json(
+      { error: '请至少填写 API Key + API Secret 或 Access Token' },
       { status: 400 }
     );
   }
