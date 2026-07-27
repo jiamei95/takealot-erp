@@ -8,12 +8,11 @@ let _db: Database.Database | null = null;
 
 export function getDb(): Database.Database {
   if (_db) {
-    // Verify connection is still valid
     try {
       _db.prepare('SELECT 1').get();
       return _db;
     } catch {
-      // Connection is stale, reconnect
+      try { _db.close(); } catch { /* ignore */ }
       _db = null;
     }
   }

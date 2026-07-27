@@ -131,7 +131,9 @@ export default function StoreAuthPage() {
       });
       const json = await res.json();
       if (res.ok) {
-        setSyncResult({ store_id: id, message: json.message, success: true });
+        const errorMsg = json.errors?.length ? `\n\n详细错误：\n${json.errors.join('\n')}` : '';
+        const hasData = (json.synced_data?.products_synced || 0) > 0 || (json.synced_data?.orders_synced || 0) > 0;
+        setSyncResult({ store_id: id, message: json.message + errorMsg, success: hasData });
         fetchStores();
       } else {
         setSyncResult({ store_id: id, message: json.error || '\u540c\u6b65\u5931\u8d25', success: false });
