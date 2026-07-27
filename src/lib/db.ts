@@ -4,16 +4,17 @@ import fs from 'fs';
 
 const DB_PATH = path.join(process.cwd(), 'data', 'erp.db');
 
-let _db: Database.Database | null = null;
+// 使用 globalThis 确保跨模块单例
+const globalForDb = globalThis as unknown as { _erp_db: Database.Database | undefined };
 
 export function getDb(): Database.Database {
-  if (_db) {
+  if (globalForDb._erp_db) {
     try {
-      _db.prepare('SELECT 1').get();
-      return _db;
+      globalForDb._erp_db.prepare('SELECT 1').get();
+      return globalForDb._erp_db;
     } catch {
-      try { _db.close(); } catch { /* ignore */ }
-      _db = null;
+      try { globalForDb._erp_db.close(); } catch { /* ignore */ }
+      globalForDb._erp_db = undefined;
     }
   }
 
@@ -22,12 +23,13 @@ export function getDb(): Database.Database {
     fs.mkdirSync(dir, { recursive: true });
   }
 
-  _db = new Database(DB_PATH);
-  _db.pragma('journal_mode = WAL');
-  _db.pragma('foreign_keys = ON');
+  const db = new Database(DB_PATH);
+  db.pragma('journal_mode = WAL');
+  db.pragma('foreign_keys = ON');
 
-  initSchema(_db);
-  return _db;
+  initSchema(db);
+  globalForDb._erp_db = db;
+  return db;
 }
 
 function initSchema(db: Database.Database): void {
