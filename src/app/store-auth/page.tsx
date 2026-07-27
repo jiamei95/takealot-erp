@@ -92,19 +92,25 @@ export default function StoreAuthPage() {
     setSaving(true);
     setError('');
     try {
+      console.log('[StoreAuth] Sending POST request:', { store_name: form.store_name, api_key: form.api_key.substring(0, 10) + '...' });
+      
       const res = await fetch('/api/store-auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
       
+      console.log('[StoreAuth] Response status:', res.status, 'headers:', Object.fromEntries(res.headers.entries()));
+      
       // Check if response has content before parsing
       const text = await res.text();
+      console.log('[StoreAuth] Response text length:', text.length, 'preview:', text.substring(0, 200));
+      
       let json;
       try {
         json = text ? JSON.parse(text) : null;
       } catch {
-        throw new Error(`服务器返回了无效响应 (HTTP ${res.status})`);
+        throw new Error(`服务器返回了无效响应 (HTTP ${res.status}): ${text.substring(0, 100)}`);
       }
       
       if (!res.ok) {
@@ -116,12 +122,13 @@ export default function StoreAuthPage() {
         throw new Error('服务器返回了空响应');
       }
       
+      console.log('[StoreAuth] Save successful:', json);
       setShowModal(false);
       fetchStores();
     } catch (err: any) {
       const msg = err?.message || String(err);
       setError(`请求失败: ${msg}`);
-      console.error('Save error:', err);
+      console.error('[StoreAuth] Save error:', err);
     } finally {
       setSaving(false);
     }

@@ -13,35 +13,41 @@ export async function GET(request: Request) {
 
 // POST /api/store-auth - create or update store auth
 export async function POST(request: Request) {
-  const db = getDb();
-  const body = await request.json();
-  const { store_name, api_key = '', api_base_url } = body;
+  try {
+    const db = getDb();
+    const body = await request.json();
+    const { store_name, api_key = '', api_base_url } = body;
 
-  if (!store_name || !api_key) {
-    return errorResponse('店铺名称和 API Key 为必填项', request, 400);
-  }
+    if (!store_name || !api_key) {
+      return errorResponse('店铺名称和 API Key 为必填项', request, 400);
+    }
 
-  const baseUrl = api_base_url || 'https://marketplace-api.takealot.com/v1';
+    const baseUrl = api_base_url || 'https://marketplace-api.takealot.com/v1';
 
-  // Check if store already exists
-  const existing = db
-    .prepare('SELECT id FROM store_auth WHERE store_name = ?')
-    .get(store_name) as { id: number } | undefined;
+    // Check if store already exists
+    const existing = db
+      .prepare('SELECT id FROM store_auth WHERE store_name = ?')
+      .get(store_name) as { id: number } | undefined;
 
-  if (existing) {
+    if (existing) {
+      db.prepare(
+        `UPDATE store_auth SET api_key = ?, api_base_url = ?, auth_status = 'connected', updated_at = datetime('now') WHERE id = ?`
+      ).run(api_key, baseUrl, existing.id);
+      const updated = db.prepare('SELECT * FROM store_auth WHERE id = ?').get(existing.id);
+      return jsonResponse({ store_auth: updated }, request);
+    }
+
     db.prepare(
-      `UPDATE store_auth SET api_key = ?, api_base_url = ?, auth_status = 'connected', updated_at = datetime('now') WHERE id = ?`
-    ).run(api_key, baseUrl, existing.id);
-    const updated = db.prepare('SELECT * FROM store_auth WHERE id = ?').get(existing.id);
-    return jsonResponse({ store_auth: updated }, request);
+      `INSERT INTO store_auth (store_name, api_key, api_base_url, auth_status, created_at, updated_at) VALUES (?, ?, ?, 'connected', datetime('now'), datetime('now'))`
+    ).run(store_name, api_key, baseUrl);
+
+    const created = db.prepare('SELECT * FROM store_auth WHERE id = last_insert_rowid()').get();
+    return jsonResponse({ store_auth: created }, request);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    console.error('[API] POST /api/store-auth error:', err);
+    return errorResponse(`服务器错误: ${message}`, request, 500);
   }
-
-  db.prepare(
-    `INSERT INTO store_auth (store_name, api_key, api_base_url, auth_status, created_at, updated_at) VALUES (?, ?, ?, 'connected', datetime('now'), datetime('now'))`
-  ).run(store_name, api_key, baseUrl);
-
-  const created = db.prepare('SELECT * FROM store_auth WHERE id = last_insert_rowid()').get();
-  return jsonResponse({ store_auth: created }, request);
 }
 
 // PUT /api/store-auth - update auth status
