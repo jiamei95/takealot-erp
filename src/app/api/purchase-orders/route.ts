@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
   try {
     const db = getDb();
     const body = await request.json();
-    const { warehouse, notes, items } = body;
+    const { store_id, store_name, warehouse, notes, items } = body;
 
     if (!warehouse) {
       return errorResponse('请选择目的地仓库', request);
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       return errorResponse('至少需要添加一个产品', request);
     }
 
-    // 自动生成 PO 编号
+    // 自动生成 ERP 内部 PO 编号
     const lastPO = db.prepare('SELECT po_number FROM purchase_orders ORDER BY id DESC LIMIT 1').get() as any;
     let poNumber = 'PO-0001';
     if (lastPO) {
@@ -73,10 +73,12 @@ export async function POST(request: NextRequest) {
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
     const result = db.prepare(`
-      INSERT INTO purchase_orders (po_number, destination_warehouse, total_items, total_quantity, status, notes, created_at, updated_at)
-      VALUES (?, ?, ?, ?, 'pending', ?, ?, ?)
+      INSERT INTO purchase_orders (po_number, store_id, store_name, destination_warehouse, total_items, total_quantity, status, notes, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?)
     `).run(
       poNumber,
+      store_id || 0,
+      store_name || '',
       warehouse,
       items.length,
       items.reduce((sum: number, i: any) => sum + i.quantity, 0),

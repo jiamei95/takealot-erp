@@ -296,8 +296,8 @@ async function syncPOs(
 
   const insertPO = db.prepare(`
     INSERT OR IGNORE INTO purchase_orders
-      (po_number, destination_warehouse, status, store_name, created_at, updated_at)
-    VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))
+      (po_number, destination_warehouse, status, total_items, total_quantity, platform_shipment_id, platform_response, store_name, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
   `);
 
   try {
@@ -328,16 +328,42 @@ async function syncPOs(
       const items = data.items || [];
 
       for (const shipment of items) {
-        const poNumber = shipment.shipment_id || '';
+        const platformShipmentId = shipment.shipment_id || '';
         const status = shipment.status || 'pending';
         const destination = shipment.destination_warehouse || 'UNKNOWN';
+        const totalItems = shipment.shipment_items?.length || 0;
+        const totalQuantity = shipment.shipment_items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0;
 
         try {
-          insertPO.run(poNumber, destination, status, storeName);
+          // 先尝试匹配 ERP 中的草稿 PO 单
+          const draftPO = db.prepare(`
+            SELECT id FROM purchase_orders 
+            WHERE store_name = ? 
+              AND destination_warehouse = ?
+              AND status = 'draft'
+              AND total_items = ?
+              AND total_quantity = ?
+            LIMIT 1
+          `).get(storeName, destination, totalItems, totalQuantity) as any;
+
+          if (draftPO) {
+            // 更新草稿 PO，关联平台信息
+            db.prepare(`
+              UPDATE purchase_orders 
+              SET status = ?,
+                  platform_shipment_id = ?,
+                  platform_response = ?,
+                  updated_at = datetime('now')
+              WHERE id = ?
+            `).run(status, platformShipmentId, JSON.stringify(shipment), draftPO.id);
+          } else {
+            // 没有匹配的草稿 PO，创建新的 PO 记录
+            insertPO.run(platformShipmentId, destination, status, totalItems, totalQuantity, platformShipmentId, JSON.stringify(shipment), storeName);
+          }
           totalSynced++;
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
-          console.error(`插入 PO 失败 ${poNumber}:`, msg);
+          console.error(`插入 PO 失败 ${platformShipmentId}:`, msg);
         }
       }
 
