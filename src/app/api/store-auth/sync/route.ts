@@ -185,7 +185,7 @@ async function syncOffers(db: ReturnType<typeof getSyncDb>, baseUrl: string, api
 }
 
 // --- Sync Sales (Orders) ---
-async function syncSales(db: ReturnType<typeof getSyncDb>, baseUrl: string, apiKey: string, debug: Array<{ url: string; status: number; body?: string }>): Promise<{ count: number; error?: string }> {
+async function syncSales(db: ReturnType<typeof getSyncDb>, baseUrl: string, apiKey: string, storeName: string, debug: Array<{ url: string; status: number; body?: string }>): Promise<{ count: number; error?: string }> {
   let totalSynced = 0;
   let continuationToken: string | undefined;
   let pageCount = 0;
@@ -254,7 +254,7 @@ async function syncSales(db: ReturnType<typeof getSyncDb>, baseUrl: string, apiK
           insertOrder.run(
             orderNumber, orderDate, productId, quantity, sellingPrice,
             successFee, fulfillmentFee, courierFee,
-            profit, status, auth.store_name as string || 'Default Store',
+            profit, status, storeName || 'Default Store',
           );
         }
       });
@@ -300,7 +300,8 @@ export async function POST(request: NextRequest) {
     if (productResult.error) errors.push(productResult.error);
 
     // Sync sales (orders)
-    const salesResult = await syncSales(db, baseUrl, apiKey, debug);
+    const storeName = (auth.store_name as string) || '';
+    const salesResult = await syncSales(db, baseUrl, apiKey, storeName, debug);
     if (salesResult.error) errors.push(salesResult.error);
 
     // Update sync time
