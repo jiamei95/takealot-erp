@@ -101,6 +101,7 @@ function initSchema(db: Database.Database): void {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       po_number TEXT NOT NULL UNIQUE,
       status TEXT NOT NULL DEFAULT 'pending',
+      destination_warehouse TEXT NOT NULL DEFAULT '',
       notes TEXT DEFAULT '',
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now'))
@@ -110,7 +111,11 @@ function initSchema(db: Database.Database): void {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       po_id INTEGER NOT NULL,
       product_id INTEGER NOT NULL,
+      sku TEXT NOT NULL DEFAULT '',
+      product_name TEXT NOT NULL DEFAULT '',
       quantity INTEGER NOT NULL DEFAULT 0,
+      cost_price REAL NOT NULL DEFAULT 0,
+      subtotal REAL NOT NULL DEFAULT 0,
       FOREIGN KEY (po_id) REFERENCES purchase_orders(id) ON DELETE CASCADE,
       FOREIGN KEY (product_id) REFERENCES products(id)
     );

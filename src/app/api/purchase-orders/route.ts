@@ -1,74 +1,101 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { jsonResponse, errorResponse, optionsResponse } from '@/lib/cors';
+import { withCors } from '@/lib/cors';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
-  const db = getDb();
-  const { searchParams } = new URL(request.url);
-  const page = parseInt(searchParams.get('page') || '1');
-  const pageSize = parseInt(searchParams.get('page_size') || '50');
-  const offset = (page - 1) * pageSize;
+  return withCors(async () => {
+    const db = getDb();
+    const searchParams = request.nextUrl.searchParams;
+    const search = searchParams.get('search') || '';
+    const status = searchParams.get('status') || '';
 
-  const total = (db.prepare('SELECT COUNT(*) as cnt FROM purchase_orders').get() as { cnt: number }).cnt;
-  const pos = db.prepare('SELECT * FROM purchase_orders ORDER BY created_at DESC LIMIT ? OFFSET ?').all(pageSize, offset);
+    let query = `
+      SELECT po.*, 
+        COUNT(DISTINCT poi.id) as total_items,
+        COALESCE(SUM(poi.quantity), 0) as total_quantity
+      FROM purchase_orders po
+      LEFT JOIN purchase_order_items poi ON po.id = poi.po_id
+      WHERE 1=1
+    `;
+    const params: any[] = [];
 
-  const result = pos.map((po) => {
-    const poRecord = po as Record<string, unknown>;
-    const items = db.prepare(`
-      SELECT poi.*, p.name as product_name, p.sku as product_sku
-      FROM purchase_order_items poi
-      LEFT JOIN products p ON poi.product_id = p.id
-      WHERE poi.po_id = ?
-    `).all(poRecord.id);
-    return { ...poRecord, items };
-  });
+    if (search) {
+      query += ` AND po.po_number LIKE ?`;
+      params.push(`%${search}%`);
+    }
+    if (status) {
+      query += ` AND po.status = ?`;
+      params.push(status);
+    }
 
-  return jsonResponse({ purchase_orders: result, total, page, page_size: pageSize }, request);
+    query += ` GROUP BY po.id ORDER BY po.created_at DESC LIMIT 100`;
+
+    const orders = db.prepare(query).all(...params);
+    return NextResponse.json({ purchase_orders: orders });
+  })();
 }
 
 export async function POST(request: NextRequest) {
-  const db = getDb();
-  const body = await request.json();
-  const { po_number, notes, items } = body;
+  return withCors(async () => {
+    const db = getDb();
+    const body = await request.json();
+    const { warehouse, notes, items } = body;
 
-  if (!po_number || !items || !Array.isArray(items) || items.length === 0) {
-    return errorResponse('PO number and items are required', request, 400);
-  }
-
-  try {
-    const insertPO = db.prepare('INSERT INTO purchase_orders (po_number, status, notes) VALUES (?, ?, ?)');
-    const insertItem = db.prepare('INSERT INTO purchase_order_items (po_id, product_id, quantity) VALUES (?, ?, ?)');
-
-    const createPO = db.transaction(() => {
-      const result = insertPO.run(po_number, 'pending', notes || '');
-      const poId = result.lastInsertRowid;
-      for (const item of items) {
-        insertItem.run(poId, item.product_id, item.quantity);
-      }
-      return poId;
-    });
-
-    const poId = createPO();
-    const po = db.prepare('SELECT * FROM purchase_orders WHERE id = ?').get(poId) as Record<string, unknown>;
-    const poItems = db.prepare(`
-      SELECT poi.*, p.name as product_name, p.sku as product_sku
-      FROM purchase_order_items poi
-      LEFT JOIN products p ON poi.product_id = p.id
-      WHERE poi.po_id = ?
-    `).all(poId);
-
-    return jsonResponse({ purchase_order: { ...po, items: poItems } }, request, 201);
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    if (message.includes('UNIQUE constraint failed')) {
-      return errorResponse('PO number already exists', request, 409);
+    if (!warehouse) {
+      return NextResponse.json({ error: '请选择目的地仓库' }, { status: 400 });
     }
-    return errorResponse(message, request, 500);
-  }
-}
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ error: '至少需要添加一个产品' }, { status: 400 });
+    }
 
-export async function OPTIONS(request: Request) {
-  return optionsResponse(request);
+    // 自动生成 PO 编号
+    const lastPO = db.prepare('SELECT po_number FROM purchase_orders ORDER BY id DESC LIMIT 1').get() as any;
+    let poNumber = 'PO-0001';
+    if (lastPO) {
+      const lastNum = parseInt(lastPO.po_number.replace('PO-', ''));
+      poNumber = `PO-${String(lastNum + 1).padStart(4, '0')}`;
+    }
+
+    const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+
+    const result = db.prepare(`
+      INSERT INTO purchase_orders (po_number, destination_warehouse, total_items, total_quantity, status, notes, created_at, updated_at)
+      VALUES (?, ?, ?, ?, 'pending', ?, ?, ?)
+    `).run(
+      poNumber,
+      warehouse,
+      items.length,
+      items.reduce((sum: number, i: any) => sum + i.quantity, 0),
+      notes || '',
+      now,
+      now,
+    );
+
+    const poId = result.lastInsertRowid;
+
+    // 添加产品明细
+    const insertItem = db.prepare(`
+      INSERT INTO purchase_order_items (po_id, product_id, sku, product_name, quantity, cost_price, subtotal)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    for (const item of items) {
+      const product = db.prepare('SELECT * FROM products WHERE id = ?').get(item.product_id) as any;
+      if (product) {
+        insertItem.run(
+          poId,
+          item.product_id,
+          product.sku,
+          product.name,
+          item.quantity,
+          product.cost_price,
+          product.cost_price * item.quantity,
+        );
+      }
+    }
+
+    return NextResponse.json({ success: true, po_number: poNumber, id: poId });
+  })();
 }
