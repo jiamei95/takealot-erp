@@ -1,11 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { withCors } from '@/lib/cors';
+import { corsHeaders } from '@/lib/cors';
 
 export const dynamic = 'force-dynamic';
 
+function jsonResponse(data: any, request: Request, status = 200) {
+  const origin = request.headers.get('origin');
+  return NextResponse.json(data, { status, headers: corsHeaders(origin) });
+}
+
+function errorResponse(error: string, request: Request, status = 400) {
+  const origin = request.headers.get('origin');
+  return NextResponse.json({ error }, { status, headers: corsHeaders(origin) });
+}
+
 export async function GET(request: NextRequest) {
-  return withCors(async () => {
+  try {
     const db = getDb();
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get('search') || '';
@@ -33,21 +43,23 @@ export async function GET(request: NextRequest) {
     query += ` GROUP BY po.id ORDER BY po.created_at DESC LIMIT 100`;
 
     const orders = db.prepare(query).all(...params);
-    return NextResponse.json({ purchase_orders: orders });
-  })();
+    return jsonResponse({ purchase_orders: orders }, request);
+  } catch (error: any) {
+    return errorResponse(error.message || '服务器错误', request, 500);
+  }
 }
 
 export async function POST(request: NextRequest) {
-  return withCors(async () => {
+  try {
     const db = getDb();
     const body = await request.json();
     const { warehouse, notes, items } = body;
 
     if (!warehouse) {
-      return NextResponse.json({ error: '请选择目的地仓库' }, { status: 400 });
+      return errorResponse('请选择目的地仓库', request);
     }
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json({ error: '至少需要添加一个产品' }, { status: 400 });
+      return errorResponse('至少需要添加一个产品', request);
     }
 
     // 自动生成 PO 编号
@@ -96,6 +108,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true, po_number: poNumber, id: poId });
-  })();
+    return jsonResponse({ success: true, po_number: poNumber, id: poId }, request);
+  } catch (error: any) {
+    return errorResponse(error.message || '服务器错误', request, 500);
+  }
 }
