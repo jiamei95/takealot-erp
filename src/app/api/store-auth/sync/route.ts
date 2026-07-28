@@ -94,6 +94,8 @@ async function fetchTakealot<T>(
     url.searchParams.set('continuation_token', continuationToken);
   }
 
+  console.log(`[Takealot] Fetching ${url.toString()}`);
+
   try {
     const res = await fetch(url.toString(), {
       method: 'GET',
@@ -104,19 +106,26 @@ async function fetchTakealot<T>(
     });
 
     const text = await res.text();
+    console.log(`[Takealot] Response status: ${res.status}, length: ${text.length}`);
 
     if (!res.ok) {
+      // Check if it's a Cloudflare block page
+      if (text.includes('Cloudflare') || text.includes('Attention Required')) {
+        return { data: null, status: res.status, body: text.substring(0, 500), error: 'Cloudflare 拦截 (403) - 请尝试本地运行或更换服务器 IP' };
+      }
       return { data: null, status: res.status, body: text.substring(0, 500), error: `HTTP ${res.status}` };
     }
 
     try {
       const json = JSON.parse(text) as T;
+      console.log(`[Takealot] Parsed JSON, items count: ${(json as any)?.items?.length ?? 'N/A'}`);
       return { data: json, status: res.status, body: text.substring(0, 500) };
     } catch {
       return { data: null, status: res.status, body: text.substring(0, 500), error: 'Invalid JSON' };
     }
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
+    console.error(`[Takealot] Fetch error:`, e);
     return { data: null, status: 0, body: '', error: msg };
   }
 }
@@ -245,7 +254,7 @@ async function syncSales(db: ReturnType<typeof getSyncDb>, baseUrl: string, apiK
           insertOrder.run(
             orderNumber, orderDate, productId, quantity, sellingPrice,
             successFee, fulfillmentFee, courierFee,
-            profit, status, '',
+            profit, status, auth.store_name as string || 'Default Store',
           );
         }
       });
