@@ -2,7 +2,10 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 
-const DB_PATH = path.join(process.cwd(), 'data', 'erp.db');
+// 生产环境使用 /tmp 目录（可写），开发环境使用项目 data 目录
+const DB_PATH = process.env.NODE_ENV === 'production'
+  ? '/tmp/erp.db'
+  : path.join(process.cwd(), 'data', 'erp.db');
 
 // 使用 globalThis 确保跨模块单例
 const globalForDb = globalThis as unknown as {
