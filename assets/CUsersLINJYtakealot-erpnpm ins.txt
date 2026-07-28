@@ -1,0 +1,172 @@
+C:\Users\LINJY\takealot-erp>npm install -g pnpm
+
+added 1 package in 7s
+
+1 package is looking for funding
+  run `npm fund` for details
+npm notice
+npm notice New major version of npm available! 11.16.0 -> 12.0.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.1
+npm notice To update run: npm install -g npm@12.0.1
+npm notice
+
+C:\Users\LINJY\takealot-erp>pnpm install
+Downloading js-tiktoken@1.0.21: 10.24 MB/10.24 MB, done
+Downloading better-sqlite3@13.0.1: 11.40 MB/11.40 MB, done
+Downloading @img/sharp-win32-x64@0.34.5: 8.69 MB/8.69 MB, done
+Downloading next@16.1.1: 30.65 MB/30.65 MB, done
+Downloading @next/swc-win32-x64-msvc@16.1.1: 40.70 MB/40.70 MB, done
+node_modules/.pnpm/better-sqlite3@13.0.1/node_modules/better-sqlite3: Running install script...
+node_modules/.pnpm/better-sqlite3@13.0.1/node_modules/better-sqlite3: Running install script, failed in 854ms
+.../node_modules/better-sqlite3 install$ node-gyp rebuild
+│ C:\Users\LINJY\takealot-erp\node_modules\.pnpm\better-sqlite3@13.0.1\node_modules\better-sqlite3>if not defined npm…
+│ (node:25028) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to secur… i
+│ (Use `node --trace-deprecation ...` to show where the warning was created)
+│ gyp ERR! find Python
+│ gyp ERR! find Python Python is not set from command line or npm configuration
+│ gyp ERR! find Python Python is not set from environment variable PYTHON
+│ gyp ERR! find Python checking if the py launcher can be used to find Python 3
+│ gyp ERR! find Python - executable path is ""
+│ gyp ERR! find Python - "" could not be run
+│ gyp ERR! find Python checking if "python3" can be used
+│ gyp ERR! find Python - executable path is ""
+│ gyp ERR! find Python - "" could not be run
+│ gyp ERR! find Python checking if "python" can be used
+│ gyp ERR! find Python - executable path is ""
+│ gyp ERR! find Python - "" could not be run
+│ gyp ERR! find Python checking if Python is C:\Users\LINJY\AppData\Local\Programs\Python\Python311\python.exe
+│ gyp ERR! find Python - version is ""
+│ gyp ERR! find Python - version is  - should be >=3.6.0
+│ gyp ERR! find Python - THIS VERSION OF PYTHON IS NOT SUPPORTED
+│ gyp ERR! find Python - "C:\Users\LINJY\AppData\Local\Programs\Python\Python311\python.exe" could not be run
+│ gyp ERR! find Python checking if Python is C:\Program Files\Python311\python.exe
+│ gyp ERR! find Python - version is ""
+│ gyp ERR! find Python - version is  - should be >=3.6.0
+│ gyp ERR! find Python - THIS VERSION OF PYTHON IS NOT SUPPORTED
+│ gyp ERR! find Python - "C:\Program Files\Python311\python.exe" could not be run
+│ gyp ERR! find Python checking if Python is C:\Users\LINJY\AppData\Local\Programs\Python\Python311-32\python.exe
+│ gyp ERR! find Python - version is ""
+│ gyp ERR! find Python - version is  - should be >=3.6.0
+│ gyp ERR! find Python - THIS VERSION OF PYTHON IS NOT SUPPORTED
+│ gyp ERR! find Python - "C:\Users\LINJY\AppData\Local\Programs\Python\Python311-32\python.exe" could not be run
+│ gyp ERR! find Python checking if Python is C:\Program Files\Python311-32\python.exe
+│ gyp ERR! find Python - version is ""
+│ gyp ERR! find Python - version is  - should be >=3.6.0
+│ gyp ERR! find Python - THIS VERSION OF PYTHON IS NOT SUPPORTED
+│ gyp ERR! find Python - "C:\Program Files\Python311-32\python.exe" could not be run
+│ gyp ERR! find Python checking if Python is C:\Program Files (x86)\Python311-32\python.exe
+│ gyp ERR! find Python - version is ""
+│ gyp ERR! find Python - version is  - should be >=3.6.0
+│ gyp ERR! find Python - THIS VERSION OF PYTHON IS NOT SUPPORTED
+│ gyp ERR! find Python - "C:\Program Files (x86)\Python311-32\python.exe" could not be run
+│ gyp ERR! find Python checking if Python is C:\Users\LINJY\AppData\Local\Programs\Python\Python310\python.exe
+│ gyp ERR! find Python - version is ""
+│ gyp ERR! find Python - version is  - should be >=3.6.0
+│ gyp ERR! find Python - THIS VERSION OF PYTHON IS NOT SUPPORTED
+│ gyp ERR! find Python - "C:\Users\LINJY\AppData\Local\Programs\Python\Python310\python.exe" could not be run
+│ gyp ERR! find Python checking if Python is C:\Program Files\Python310\python.exe
+│ gyp ERR! find Python - version is ""
+│ gyp ERR! find Python - version is  - should be >=3.6.0
+│ gyp ERR! find Python - THIS VERSION OF PYTHON IS NOT SUPPORTED
+│ gyp ERR! find Python - "C:\Program Files\Python310\python.exe" could not be run
+│ gyp ERR! find Python checking if Python is C:\Users\LINJY\AppData\Local\Programs\Python\Python310-32\python.exe
+│ gyp ERR! find Python - version is ""
+│ gyp ERR! find Python - version is  - should be >=3.6.0
+│ gyp ERR! find Python - THIS VERSION OF PYTHON IS NOT SUPPORTED
+│ gyp ERR! find Python - "C:\Users\LINJY\AppData\Local\Programs\Python\Python310-32\python.exe" could not be run
+│ gyp ERR! find Python checking if Python is C:\Program Files\Python310-32\python.exe
+│ gyp ERR! find Python - version is ""
+│ gyp ERR! find Python - version is  - should be >=3.6.0
+│ gyp ERR! find Python - THIS VERSION OF PYTHON IS NOT SUPPORTED
+│ gyp ERR! find Python - "C:\Program Files\Python310-32\python.exe" could not be run
+│ gyp ERR! find Python checking if Python is C:\Program Files (x86)\Python310-32\python.exe
+│ gyp ERR! find Python - version is ""
+│ gyp ERR! find Python - version is  - should be >=3.6.0
+│ gyp ERR! find Python - THIS VERSION OF PYTHON IS NOT SUPPORTED
+│ gyp ERR! find Python - "C:\Program Files (x86)\Python310-32\python.exe" could not be run
+│ gyp ERR! find Python checking if Python is C:\Users\LINJY\AppData\Local\Programs\Python\Python39\python.exe
+│ gyp ERR! find Python - version is ""
+│ gyp ERR! find Python - version is  - should be >=3.6.0
+│ gyp ERR! find Python - THIS VERSION OF PYTHON IS NOT SUPPORTED
+│ gyp ERR! find Python - "C:\Users\LINJY\AppData\Local\Programs\Python\Python39\python.exe" could not be run
+│ gyp ERR! find Python checking if Python is C:\Program Files\Python39\python.exe
+│ gyp ERR! find Python - version is ""
+│ gyp ERR! find Python - version is  - should be >=3.6.0
+│ gyp ERR! find Python - THIS VERSION OF PYTHON IS NOT SUPPORTED
+│ gyp ERR! find Python - "C:\Program Files\Python39\python.exe" could not be run
+│ gyp ERR! find Python checking if Python is C:\Users\LINJY\AppData\Local\Programs\Python\Python39-32\python.exe
+│ gyp ERR! find Python - version is ""
+│ gyp ERR! find Python - version is  - should be >=3.6.0
+│ gyp ERR! find Python - THIS VERSION OF PYTHON IS NOT SUPPORTED
+│ gyp ERR! find Python - "C:\Users\LINJY\AppData\Local\Programs\Python\Python39-32\python.exe" could not be run
+│ gyp ERR! find Python checking if Python is C:\Program Files\Python39-32\python.exe
+│ gyp ERR! find Python - version is ""
+│ gyp ERR! find Python - version is  - should be >=3.6.0
+│ gyp ERR! find Python - THIS VERSION OF PYTHON IS NOT SUPPORTED
+│ gyp ERR! find Python - "C:\Program Files\Python39-32\python.exe" could not be run
+│ gyp ERR! find Python checking if Python is C:\Program Files (x86)\Python39-32\python.exe
+│ gyp ERR! find Python - version is ""
+│ gyp ERR! find Python - version is  - should be >=3.6.0
+│ gyp ERR! find Python - THIS VERSION OF PYTHON IS NOT SUPPORTED
+│ gyp ERR! find Python - "C:\Program Files (x86)\Python39-32\python.exe" could not be run
+│ gyp ERR! find Python checking if Python is C:\Users\LINJY\AppData\Local\Programs\Python\Python38\python.exe
+│ gyp ERR! find Python - version is ""
+│ gyp ERR! find Python - version is  - should be >=3.6.0
+│ gyp ERR! find Python - THIS VERSION OF PYTHON IS NOT SUPPORTED
+│ gyp ERR! find Python - "C:\Users\LINJY\AppData\Local\Programs\Python\Python38\python.exe" could not be run
+│ gyp ERR! find Python checking if Python is C:\Program Files\Python38\python.exe
+│ gyp ERR! find Python - version is ""
+│ gyp ERR! find Python - version is  - should be >=3.6.0
+│ gyp ERR! find Python - THIS VERSION OF PYTHON IS NOT SUPPORTED
+│ gyp ERR! find Python - "C:\Program Files\Python38\python.exe" could not be run
+│ gyp ERR! find Python checking if Python is C:\Users\LINJY\AppData\Local\Programs\Python\Python38-32\python.exe
+│ gyp ERR! find Python - version is ""
+│ gyp ERR! find Python - version is  - should be >=3.6.0
+│ gyp ERR! find Python - THIS VERSION OF PYTHON IS NOT SUPPORTED
+│ gyp ERR! find Python - "C:\Users\LINJY\AppData\Local\Programs\Python\Python38-32\python.exe" could not be run
+│ gyp ERR! find Python checking if Python is C:\Program Files\Python38-32\python.exe
+│ gyp ERR! find Python - version is ""
+│ gyp ERR! find Python - version is  - should be >=3.6.0
+│ gyp ERR! find Python - THIS VERSION OF PYTHON IS NOT SUPPORTED
+│ gyp ERR! find Python - "C:\Program Files\Python38-32\python.exe" could not be run
+│ gyp ERR! find Python checking if Python is C:\Program Files (x86)\Python38-32\python.exe
+│ gyp ERR! find Python - version is ""
+│ gyp ERR! find Python - version is  - should be >=3.6.0
+│ gyp ERR! find Python - THIS VERSION OF PYTHON IS NOT SUPPORTED
+│ gyp ERR! find Python - "C:\Program Files (x86)\Python38-32\python.exe" could not be run
+│ gyp ERR! find Python
+│ gyp ERR! find Python **********************************************************
+│ gyp ERR! find Python You need to install the latest version of Python.
+│ gyp ERR! find Python Node-gyp should be able to find and use Python. If not,
+│ gyp ERR! find Python you can try one of the following options:
+│ gyp ERR! find Python - Use the switch --python="C:\Path\To\python.exe"
+│ gyp ERR! find Python (accepted by both node-gyp and npm)
+│ gyp ERR! find Python - Set the environment variable PYTHON
+│ gyp ERR! find Python - Set the npm configuration variable python:
+│ gyp ERR! find Python npm config set python "C:\Path\To\python.exe"
+│ gyp ERR! find Python For more information consult the documentation at:
+│ gyp ERR! find Python https://github.com/nodejs/node-gyp#installation
+│ gyp ERR! find Python **********************************************************
+│ gyp ERR! find Python
+│ gyp ERR! configure error
+│ gyp ERR! stack Error: Could not find any Python installation to use
+│ gyp ERR! stack at PythonFinder.fail (C:\Users\LINJY\AppData\Local\pnpm\store\v11\links\@\pnpm\9.0.0\c0f3c2ecd4a4ddd…
+│ gyp ERR! stack at PythonFinder.findPython (C:\Users\LINJY\AppData\Local\pnpm\store\v11\links\@\pnpm\9.0.0\c0f3c2ecd…
+│ gyp ERR! stack at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+│ gyp ERR! stack at async configure (C:\Users\LINJY\AppData\Local\pnpm\store\v11\links\@\pnpm\9.0.0\c0f3c2ecd4a4ddded…
+│ gyp ERR! stack at async run (C:\Users\LINJY\AppData\Local\pnpm\store\v11\links\@\pnpm\9.0.0\c0f3c2ecd4a4dddeda2270d…
+│ gyp ERR! System Windows_NT 10.0.26200
+│ gyp ERR! command "C:\\Program Files\\nodejs\\node.exe" "C:\\Users\\LINJY\\AppData\\Local\\pnpm\\store\\v11\\links\\…
+│ gyp ERR! cwd C:\Users\LINJY\takealot-erp\node_modules\.pnpm\better-sqlite3@13.0.1\node_modules\better-sqlite3
+│ gyp ERR! node -v v24.18.0
+│ gyp ERR! node-gyp -v v10.1.0
+│ gyp ERR! not ok
+└─ Failed in 854ms at C:\Users\LINJY\takealot-erp\node_modules\.pnpm\better-sqlite3@13.0.1\node_modules\better-sqlite3
+node_modules/.pnpm/unrs-resolver@1.11.1/node_modules/unrs-resolver: Running postinstall script, done in 202ms
+node_modules/.pnpm/esbuild@0.27.3/node_modules/esbuild: Running postinstall script, done in 786ms
+node_modules/.pnpm/esbuild@0.25.12/node_modules/esbuild: Running postinstall script...
+node_modules/.pnpm/esbuild@0.25.12/node_modules/esbuild: Running postinstall script, done in 814msinstall script, done i
+n 105ms
+node_modules/.pnpm/esbuild@0.18.20/node_modules/esbuild: Running postinstall script...
+node_modules/.pnpm/sharp@0.34.5/node_modules/sharp: Running install script, done in 156ms
+ ELIFECYCLE  Command failed with exit code 1.
