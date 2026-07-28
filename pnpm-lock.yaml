@@ -124,10 +124,10 @@ importers:
         version: 0.31.8
       drizzle-orm:
         specifier: ^0.45.1
-        version: 0.45.1(@types/better-sqlite3@7.6.13)(@types/pg@8.16.0)(better-sqlite3@13.0.1)(pg@8.17.2)
+        version: 0.45.1(@types/better-sqlite3@7.6.13)(@types/pg@8.16.0)(better-sqlite3@13.0.1)(pg@8.17.2)(sql.js@1.14.1)
       drizzle-zod:
         specifier: ^0.8.3
-        version: 0.8.3(drizzle-orm@0.45.1(@types/better-sqlite3@7.6.13)(@types/pg@8.16.0)(better-sqlite3@13.0.1)(pg@8.17.2))(zod@4.3.6)
+        version: 0.8.3(drizzle-orm@0.45.1(@types/better-sqlite3@7.6.13)(@types/pg@8.16.0)(better-sqlite3@13.0.1)(pg@8.17.2)(sql.js@1.14.1))(zod@4.3.6)
       embla-carousel-react:
         specifier: ^8.6.0
         version: 8.6.0(react@19.2.3)
@@ -5730,6 +5730,9 @@ packages:
     resolution: {integrity: sha512-UcjcJOWknrNkF6PLX83qcHM6KHgVKNkV62Y8a5uYDVv9ydGQVwAHMKqHdJje1VTWpljG0WYpCDhrCdAOYH4TWg==}
     engines: {node: '>= 10.x'}
 
+  sql.js@1.14.1:
+    resolution: {integrity: sha512-gcj8zBWU5cFsi9WUP+4bFNXAyF1iRpA3LLyS/DP5xlrNzGmPIizUeBggKa8DbDwdqaKwUcTEnChtd2grWo/x/A==}
+
   stable-hash@0.0.5:
     resolution: {integrity: sha512-+L3ccpzibovGXFK+Ap/f8LOS0ahMrHTf3xu7mMLSpEGU0EO9ucaysSylKo9eRDFNhWve/y275iPmIZ4z39a9iA==}
 
@@ -9935,16 +9938,17 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.45.1(@types/better-sqlite3@7.6.13)(@types/pg@8.16.0)(better-sqlite3@13.0.1)(pg@8.17.2):
+  drizzle-orm@0.45.1(@types/better-sqlite3@7.6.13)(@types/pg@8.16.0)(better-sqlite3@13.0.1)(pg@8.17.2)(sql.js@1.14.1):
     optionalDependencies:
       '@types/better-sqlite3': 7.6.13
       '@types/pg': 8.16.0
       better-sqlite3: 13.0.1
       pg: 8.17.2
+      sql.js: 1.14.1
 
-  drizzle-zod@0.8.3(drizzle-orm@0.45.1(@types/better-sqlite3@7.6.13)(@types/pg@8.16.0)(better-sqlite3@13.0.1)(pg@8.17.2))(zod@4.3.6):
+  drizzle-zod@0.8.3(drizzle-orm@0.45.1(@types/better-sqlite3@7.6.13)(@types/pg@8.16.0)(better-sqlite3@13.0.1)(pg@8.17.2)(sql.js@1.14.1))(zod@4.3.6):
     dependencies:
-      drizzle-orm: 0.45.1(@types/better-sqlite3@7.6.13)(@types/pg@8.16.0)(better-sqlite3@13.0.1)(pg@8.17.2)
+      drizzle-orm: 0.45.1(@types/better-sqlite3@7.6.13)(@types/pg@8.16.0)(better-sqlite3@13.0.1)(pg@8.17.2)(sql.js@1.14.1)
       zod: 4.3.6
 
   dunder-proto@1.0.1:
@@ -12258,6 +12262,9 @@ snapshots:
   source-map@0.7.6: {}
 
   split2@4.2.0: {}
+
+  sql.js@1.14.1:
+    optional: true
 
   stable-hash@0.0.5: {}
 
