@@ -91,6 +91,8 @@ async function fetchTakealot<T>(
       headers: {
         'X-API-Key': apiKey,
         'Accept': 'application/json',
+        'User-Agent': 'Takealot-ERP-System/1.0',
+        'Accept-Language': 'en-US,en;q=0.9',
       },
     });
 
