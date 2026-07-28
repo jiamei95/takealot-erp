@@ -2,8 +2,6 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { jsonResponse, errorResponse, optionsResponse } from '@/lib/cors';
-import * as path from 'path';
-import * as fs from 'fs';
 
 // ============================================================
 // Takealot Marketplace API Sync
@@ -69,17 +67,8 @@ interface SyncResult {
   debug?: Array<{ url: string; status: number; body?: string }>;
 }
 
-// --- Helper: create a fresh DB connection for this route ---
-function getSyncDb() {
-  const dbPath = path.join(process.cwd(), 'data', 'erp.db');
-  const dir = path.dirname(dbPath);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  const Database = require('better-sqlite3');
-  const db = new Database(dbPath);
-  db.pragma('journal_mode = WAL');
-  db.pragma('busy_timeout = 5000');
-  return db;
-}
+// --- Helper: use shared DB connection ---
+// getDb() handles /tmp path for production
 
 // --- Takealot API client ---
 async function fetchTakealot<T>(
@@ -131,7 +120,7 @@ async function fetchTakealot<T>(
 }
 
 // --- Sync Offers (Products) ---
-async function syncOffers(db: ReturnType<typeof getSyncDb>, baseUrl: string, apiKey: string, debug: Array<{ url: string; status: number; body?: string }>): Promise<{ count: number; error?: string }> {
+async function syncOffers(db: ReturnType<typeof getDb>, baseUrl: string, apiKey: string, debug: Array<{ url: string; status: number; body?: string }>): Promise<{ count: number; error?: string }> {
   let totalSynced = 0;
   let continuationToken: string | undefined;
   let pageCount = 0;
@@ -185,7 +174,7 @@ async function syncOffers(db: ReturnType<typeof getSyncDb>, baseUrl: string, api
 }
 
 // --- Sync Sales (Orders) ---
-async function syncSales(db: ReturnType<typeof getSyncDb>, baseUrl: string, apiKey: string, storeName: string, debug: Array<{ url: string; status: number; body?: string }>): Promise<{ count: number; error?: string }> {
+async function syncSales(db: ReturnType<typeof getDb>, baseUrl: string, apiKey: string, storeName: string, debug: Array<{ url: string; status: number; body?: string }>): Promise<{ count: number; error?: string }> {
   let totalSynced = 0;
   let continuationToken: string | undefined;
   let pageCount = 0;
@@ -274,7 +263,7 @@ async function syncSales(db: ReturnType<typeof getSyncDb>, baseUrl: string, apiK
 
 // --- Main sync handler ---
 export async function POST(request: NextRequest) {
-  const db = getSyncDb();
+  const db = getDb();
 
   try {
     const body = await request.json();
