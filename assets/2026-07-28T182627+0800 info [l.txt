@@ -1,0 +1,179 @@
+2026-07-28T18:26:27+08:00 info: [launch] Create deploy history: 7667523147364581376
+2026-07-28T18:26:27+08:00 info: [launch] Deploy logging init success, logid: 202607281826270D8288264D786BF0E340
+2026-07-28T18:26:27+08:00 info: [launch] Initializing deployment task
+2026-07-28T18:26:27+08:00 info: [launch] Loading pipeline run history
+2026-07-28T18:26:27+08:00 info: [launch] Creating new pipeline run history
+2026-07-28T18:26:27+08:00 info: [launch] Starting deployment
+2026-07-28T18:26:27+08:00 info: [package] [code] Pipeline run start
+2026-07-28T18:26:29+08:00 info: [package] [code] Pipeline run success
+2026-07-28T18:26:29+08:00 info: [build] [runtime_pkg] Pipeline run start
+2026-07-28T18:28:22+08:00 info: [build] [runtime_pkg] Build veFaas Runtime pkg log:
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] Installing dependencies...
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] .../node_modules/better-sqlite3 install$ node-gyp rebuild
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] .../node_modules/unrs-resolver postinstall$ napi-postinstall unrs-resolver 1.11.1 check
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] .../esbuild@0.27.3/node_modules/esbuild postinstall$ node install.js
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] .../esbuild@0.25.12/node_modules/esbuild postinstall$ node install.js
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] .../node_modules/msw postinstall$ node -e "import('./config/scripts/postinstall.js').catch(() => void 0)"
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] .../node_modules/msw postinstall: Done
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] .../node_modules/unrs-resolver postinstall: Done
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] .../esbuild@0.25.12/node_modules/esbuild postinstall: Done
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] .../esbuild@0.18.20/node_modules/esbuild postinstall$ node install.js
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] .../esbuild@0.27.3/node_modules/esbuild postinstall: Done
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] .../sharp@0.34.5/node_modules/sharp install$ node install/check.js || npm run build
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] .../esbuild@0.18.20/node_modules/esbuild postinstall: Done
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] .../sharp@0.34.5/node_modules/sharp install: Done
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] .../node_modules/better-sqlite3 install: make: Entering directory '/tmp/workdir/node_modules/.pnpm/better-sqlite3@13.0.1/node_modules/better-sqlite3/build'
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] .../node_modules/better-sqlite3 install:   TOUCH Release/obj.target/better_sqlite3.stamp
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] .../node_modules/better-sqlite3 install:   TOUCH Release/obj.target/test_extension.stamp
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] .../node_modules/better-sqlite3 install: make: Leaving directory '/tmp/workdir/node_modules/.pnpm/better-sqlite3@13.0.1/node_modules/better-sqlite3/build'
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] .../node_modules/better-sqlite3 install: Done
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] dependencies:
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @aws-sdk/client-s3 3.975.0
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @aws-sdk/lib-storage 3.975.0
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @hookform/resolvers 5.2.2
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @radix-ui/react-accordion 1.2.12
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @radix-ui/react-alert-dialog 1.1.15
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @radix-ui/react-aspect-ratio 1.1.8
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @radix-ui/react-avatar 1.1.11
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @radix-ui/react-checkbox 1.3.3
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @radix-ui/react-collapsible 1.1.12
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @radix-ui/react-context-menu 2.2.16
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @radix-ui/react-dialog 1.1.15
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @radix-ui/react-dropdown-menu 2.1.16
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @radix-ui/react-hover-card 1.1.15
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @radix-ui/react-label 2.1.8
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @radix-ui/react-menubar 1.1.16
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @radix-ui/react-navigation-menu 1.2.14
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @radix-ui/react-popover 1.1.15
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @radix-ui/react-progress 1.1.8
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @radix-ui/react-radio-group 1.3.8
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @radix-ui/react-scroll-area 1.2.10
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @radix-ui/react-select 2.2.6
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @radix-ui/react-separator 1.1.8
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @radix-ui/react-slider 1.3.6
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @radix-ui/react-slot 1.2.4
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @radix-ui/react-switch 1.2.6
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @radix-ui/react-tabs 1.1.13
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @radix-ui/react-toggle 1.1.10
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @radix-ui/react-toggle-group 1.1.11
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @radix-ui/react-tooltip 1.2.8
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @supabase/supabase-js 2.95.3
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + better-sqlite3 13.0.1
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + class-variance-authority 0.7.1
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + clsx 2.1.1
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + cmdk 1.1.1
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + coze-coding-dev-sdk 0.7.24
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + date-fns 4.1.0
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + dotenv 17.2.3
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + drizzle-kit 0.31.8
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + drizzle-orm 0.45.1
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + drizzle-zod 0.8.3
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + embla-carousel-react 8.6.0
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + input-otp 1.4.2
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + lucide-react 0.468.0
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + next 16.1.1
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + next-themes 0.4.6
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + pg 8.17.2
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + react 19.2.3
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + react-day-picker 9.13.0
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + react-dom 19.2.3
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + react-hook-form 7.71.1
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + react-resizable-panels 4.5.2
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + recharts 2.15.4
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + sonner 2.0.7
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + tailwind-merge 2.6.0
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + tw-animate-css 1.4.0
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + vaul 1.1.2
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + zod 4.3.6
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] devDependencies:
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @react-dev-inspector/babel-plugin 2.0.1
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @react-dev-inspector/middleware 2.0.1
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @tailwindcss/postcss 4.1.18
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @types/better-sqlite3 7.6.13
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @types/node 20.19.30
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @types/pg 8.16.0
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @types/react 19.2.10
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + @types/react-dom 19.2.3
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + eslint 9.39.2
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + eslint-config-next 16.1.1
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + only-allow 1.2.2
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + react-dev-inspector 2.0.1
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + shadcn 3.7.0
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + stylelint 16.26.1
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + stylelint-config-standard 38.0.0
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + tailwindcss 4.1.18
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + tsup 8.5.1
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + tsx 4.21.0
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] + typescript 5.9.3
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] Done in 52.5s
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] Building the Next.js project...
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] Attention: Next.js now collects completely anonymous telemetry regarding usage.
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] This information is used to shape Next.js' roadmap and prioritize features.
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] https://nextjs.org/telemetry
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] ▲ Next.js 16.1.1 (Turbopack)
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] Creating an optimized production build ...
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] Using external babel configuration from /tmp/workdir/.babelrc
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] ✓ Compiled successfully in 4.9s
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] Running TypeScript ...
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] Collecting page data using 3 workers ...
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] Generating static pages using 3 workers (0/11) ...
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] Generating static pages using 3 workers (2/11)
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] Generating static pages using 3 workers (5/11)
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] Generating static pages using 3 workers (8/11)
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] ✓ Generating static pages using 3 workers (11/11) in 198.7ms
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] Finalizing page optimization ...
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] Route (app)
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] ┌ ○ /
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] ├ ○ /_not-found
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] ├ ƒ /api/history
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] ├ ƒ /api/orders
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] ├ ƒ /api/products
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] ├ ƒ /api/products/[id]
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] ├ ƒ /api/profit
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] ├ ƒ /api/purchase-orders
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] ├ ƒ /api/purchase-orders/[id]
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] ├ ƒ /api/seed
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] ├ ƒ /api/store-auth
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] ├ ƒ /api/store-auth/sync
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] ├ ƒ /api/stores
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] ├ ○ /dashboard
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] ├ ○ /history
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] ├ ○ /orders
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] ├ ○ /products
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] ├ ○ /purchase-orders
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] ├ ○ /robots.txt
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] └ ○ /store-auth
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] ○  (Static)   prerendered as static content
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] ƒ  (Dynamic)  server-rendered on demand
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] Bundling server with tsup...
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] CLI Building entry: src/server.ts
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] CLI Using tsconfig: tsconfig.json
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] CLI tsup v8.5.1
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] CLI Target: node20
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] CJS Build start
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] CJS dist/server.js 2.14 KB
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] CJS ⚡️ Build success in 15ms
+2026-07-28T18:26:33+08:00 info: [build] [runtime_pkg] Build completed successfully!
+
+2026-07-28T18:28:22+08:00 info: [build] [runtime_pkg] Pipeline run success
+2026-07-28T18:28:22+08:00 info: [deploy] [database] Pipeline run start
+2026-07-28T18:28:22+08:00 info: [deploy] [storage] Pipeline run start
+2026-07-28T18:28:23+08:00 info: [deploy] [storage] Pipeline run success
+2026-07-28T18:28:28+08:00 info: [deploy] [database] Pipeline run success
+2026-07-28T18:28:28+08:00 info: [deploy] [secret] Pipeline run start
+2026-07-28T18:28:28+08:00 info: [deploy] [secret] Pipeline run success
+2026-07-28T18:28:28+08:00 info: [deploy] [vefaas] Pipeline run start
+2026-07-28T18:29:23+08:00 info: [deploy] [vefaas] deploy vefaas log:
+2026-07-28T18:29:16+08:00 info: [deploy] [vefaas] [FaaS System] starting user function at port 5000
+2026-07-28T18:29:16+08:00 info: [deploy] [vefaas] [FaaS System] run user command: bash ./scripts/start.sh
+2026-07-28T18:29:16+08:00 info: [deploy] [vefaas] Starting HTTP service on port 5000 for deploy...
+2026-07-28T18:29:16+08:00 info: [deploy] [vefaas] Starting HTTP service on port 5000 for deploy...
+2026-07-28T18:29:17+08:00 info: [deploy] [vefaas] > Server listening at http://localhost:5000 as PROD
+2026-07-28T18:29:17+08:00 info: [deploy] [vefaas] (node:22) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-07-28T18:29:17+08:00 info: [deploy] [vefaas] (Use `node --trace-deprecation ...` to show where the warning was created)
+
+2026-07-28T18:29:23+08:00 info: [deploy] [vefaas] Pipeline run success
+2026-07-28T18:29:23+08:00 info: [deploy] [audit] Pipeline run start
+2026-07-28T18:29:23+08:00 info: [deploy] [audit] Pipeline run success
+2026-07-28T18:29:23+08:00 info: [launch] Deployment completed successfully
