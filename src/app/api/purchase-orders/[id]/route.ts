@@ -15,8 +15,9 @@ function errorResponse(error: string, request: Request, status = 400) {
 }
 
 // 获取 PO 详情
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const db = getDb();
     const po = db.prepare(`
       SELECT po.*, 
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       LEFT JOIN purchase_order_items poi ON po.id = poi.po_id
       WHERE po.id = ?
       GROUP BY po.id
-    `).get(params.id) as any;
+    `).get(id) as any;
 
     if (!po) {
       return errorResponse('PO 单不存在', request, 404);
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     // 获取产品明细
     const items = db.prepare(`
       SELECT * FROM purchase_order_items WHERE po_id = ?
-    `).all(params.id);
+    `).all(id);
 
     return jsonResponse({ ...po, items }, request);
   } catch (error: any) {
@@ -44,8 +45,9 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // 更新 PO 单（关联平台 PO、更新状态）
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const db = getDb();
     const body = await request.json();
     const { status, platform_shipment_id, platform_response } = body;
@@ -64,7 +66,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       platform_shipment_id || null,
       platform_response || null,
       now,
-      params.id,
+      id,
     );
 
     return jsonResponse({ success: true }, request);
@@ -74,14 +76,15 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // 删除 PO 单
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const db = getDb();
     
     // 先删除产品明细
-    db.prepare('DELETE FROM purchase_order_items WHERE po_id = ?').run(params.id);
+    db.prepare('DELETE FROM purchase_order_items WHERE po_id = ?').run(id);
     // 再删除 PO 单
-    db.prepare('DELETE FROM purchase_orders WHERE id = ?').run(params.id);
+    db.prepare('DELETE FROM purchase_orders WHERE id = ?').run(id);
 
     return jsonResponse({ success: true }, request);
   } catch (error: any) {
