@@ -100,8 +100,12 @@ function initSchema(db: Database.Database): void {
     CREATE TABLE IF NOT EXISTS purchase_orders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       po_number TEXT NOT NULL UNIQUE,
-      status TEXT NOT NULL DEFAULT 'pending',
+      store_name TEXT NOT NULL DEFAULT '',
       destination_warehouse TEXT NOT NULL DEFAULT '',
+      shipment_id TEXT DEFAULT '',
+      tracking_info TEXT DEFAULT '',
+      due_date TEXT DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'pending',
       notes TEXT DEFAULT '',
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now'))

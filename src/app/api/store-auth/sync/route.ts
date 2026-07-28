@@ -61,6 +61,7 @@ interface SyncResult {
   synced_data: {
     products_synced: number;
     orders_synced: number;
+    po_synced?: number;
   };
   errors: string[];
   message: string;
@@ -263,6 +264,76 @@ async function syncSales(db: ReturnType<typeof getDb>, baseUrl: string, apiKey: 
   return { count: totalSynced };
 }
 
+// --- Sync Purchase Orders ---
+async function syncPOs(
+  apiKey: string,
+  baseUrl: string,
+  storeName: string,
+  db: Database.Database,
+  debug: Array<{ url: string; status: number; body?: string }>,
+): Promise<{ count: number; error?: string }> {
+  let totalSynced = 0;
+  let continuationToken = '';
+  const maxPages = 10;
+  let page = 0;
+
+  const insertPO = db.prepare(`
+    INSERT OR IGNORE INTO purchase_orders
+      (po_number, destination_warehouse, status, store_name, created_at, updated_at)
+    VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))
+  `);
+
+  try {
+    do {
+      page++;
+      const url = `${baseUrl}/shipments${continuationToken ? `?continuation_token=${continuationToken}` : ''}`;
+
+      const res = await fetch(url, {
+        headers: {
+          'X-API-Key': apiKey,
+          'Accept': 'application/json',
+          'User-Agent': 'Takealot-ERP-System/1.0',
+        },
+      });
+
+      if (!res.ok) {
+        const body = await res.text();
+        debug.push({ url, status: res.status, body: body.substring(0, 500) });
+        if (res.status === 403) {
+          errors.push('请求失败 (403): Cloudflare 拦截 (403) - 请尝试本地运行或更换服务器 IP');
+        } else {
+          errors.push(`请求失败 (${res.status}): HTTP ${res.status}`);
+        }
+        break;
+      }
+
+      const data = await res.json() as CollectionResponse<TakealotShipment>;
+      const items = data.items || [];
+
+      for (const shipment of items) {
+        const poNumber = shipment.shipment_id || '';
+        const status = shipment.status || 'pending';
+        const destination = shipment.destination || 'UNKNOWN';
+
+        try {
+          insertPO.run(poNumber, destination, status, storeName);
+          totalSynced++;
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          console.error(`插入 PO 失败 ${poNumber}:`, msg);
+        }
+      }
+
+      continuationToken = data.continuation_token || '';
+    } while (continuationToken && page < maxPages);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { count: totalSynced, error: `PO 同步异常: ${msg}` };
+  }
+
+  return { count: totalSynced };
+}
+
 // --- Main sync handler ---
 export async function POST(request: NextRequest) {
   const db = getDb();
@@ -295,6 +366,10 @@ export async function POST(request: NextRequest) {
     const salesResult = await syncSales(db, baseUrl, apiKey, storeName, debug);
     if (salesResult.error) errors.push(salesResult.error);
 
+    // Sync POs (shipments) from Takealot
+    const poResult = await syncPOs(db, baseUrl, apiKey, storeName, debug);
+    if (poResult.error) errors.push(poResult.error);
+
     // Update sync time
     db.prepare("UPDATE store_auth SET last_sync_at = datetime('now'), auth_status = ? WHERE id = ?")
       .run(errors.length > 0 ? 'error' : 'connected', auth.id);
@@ -306,11 +381,12 @@ export async function POST(request: NextRequest) {
       synced_data: {
         products_synced: productResult.count,
         orders_synced: salesResult.count,
+        po_synced: poResult.count,
       },
       errors,
       message: errors.length === 0
-        ? `同步成功！共同步了 ${productResult.count} 个产品和 ${salesResult.count} 个订单。`
-        : `同步部分完成：${productResult.count} 个产品，${salesResult.count} 个订单。${errors.join('; ')}`,
+        ? `同步成功！共同步了 ${productResult.count} 个产品、${salesResult.count} 个订单和 ${poResult.count} 个 PO 单。`
+        : `同步部分完成：${productResult.count} 个产品，${salesResult.count} 个订单，${poResult.count} 个 PO 单。${errors.join('; ')}`,
       debug: debug.slice(-10),
     };
 
