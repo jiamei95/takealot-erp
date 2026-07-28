@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { jsonResponse, errorResponse, optionsResponse } from '@/lib/cors';
+import type Database from 'better-sqlite3';
 
 // ============================================================
 // Takealot Marketplace API Sync
@@ -26,6 +27,21 @@ interface TakealotOffer {
   status: 'buyable' | 'not_buyable' | 'disabled_by_seller' | 'disabled_by_takealot';
   created_at?: string;
   updated_at?: string;
+}
+
+interface TakealotShipmentItem {
+  offer_id: string;
+  quantity: number;
+  status?: string;
+}
+
+interface TakealotShipment {
+  shipment_id: string;
+  shipment_number?: string;
+  destination_warehouse?: string;
+  status?: string;
+  created_at?: string;
+  shipment_items?: TakealotShipmentItem[];
 }
 
 interface TakealotSale {
@@ -271,6 +287,7 @@ async function syncPOs(
   storeName: string,
   db: Database.Database,
   debug: Array<{ url: string; status: number; body?: string }>,
+  errors: string[],
 ): Promise<{ count: number; error?: string }> {
   let totalSynced = 0;
   let continuationToken = '';
@@ -313,7 +330,7 @@ async function syncPOs(
       for (const shipment of items) {
         const poNumber = shipment.shipment_id || '';
         const status = shipment.status || 'pending';
-        const destination = shipment.destination || 'UNKNOWN';
+        const destination = shipment.destination_warehouse || 'UNKNOWN';
 
         try {
           insertPO.run(poNumber, destination, status, storeName);
@@ -367,7 +384,7 @@ export async function POST(request: NextRequest) {
     if (salesResult.error) errors.push(salesResult.error);
 
     // Sync POs (shipments) from Takealot
-    const poResult = await syncPOs(db, baseUrl, apiKey, storeName, debug);
+    const poResult = await syncPOs(apiKey, baseUrl, storeName, db, debug, errors);
     if (poResult.error) errors.push(poResult.error);
 
     // Update sync time
