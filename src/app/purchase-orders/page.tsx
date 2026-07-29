@@ -1,29 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import {
-  FileText,
-  Plus,
-  Package,
-  Truck,
-  CheckCircle,
-  XCircle,
-  Clock,
-  Search,
-  Filter,
-  Trash2,
-  X,
-  ShoppingCart,
-} from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Package, Plus, Upload, Download, Search, Filter, FileText, CheckCircle, Clock, XCircle, Truck } from 'lucide-react';
 
 interface PO {
   id: number;
   po_number: string;
+  store_name: string;
   destination_warehouse: string;
+  status: string;
   total_items: number;
   total_quantity: number;
-  status: string;
-  notes: string;
+  platform_shipment_id: string;
   created_at: string;
   updated_at: string;
 }
@@ -31,559 +19,497 @@ interface PO {
 interface Product {
   id: number;
   sku: string;
-  name: string;
+  title: string;
   cost_price: number;
-  image_url: string;
 }
 
-interface POItem {
+interface Store {
   id: number;
-  po_id: number;
-  product_id: number;
-  sku: string;
-  product_name: string;
-  quantity: number;
-  cost_price: number;
-  subtotal: number;
+  name: string;
 }
-
-const statusMap: Record<string, { label: string; color: string; icon: any }> = {
-  pending: { label: '待发货', color: 'bg-yellow-100 text-yellow-700 border-yellow-200', icon: Clock },
-  shipped: { label: '已发货', color: 'bg-blue-100 text-blue-700 border-blue-200', icon: Truck },
-  delivered: { label: '已送达', color: 'bg-green-100 text-green-700 border-green-200', icon: CheckCircle },
-  cancelled: { label: '已取消', color: 'bg-red-100 text-red-700 border-red-200', icon: XCircle },
-};
 
 const WAREHOUSES = [
-  { id: 'JHB', name: '约翰内斯堡 (JHB)', address: 'Gauteng, Johannesburg' },
-  { id: 'CPT', name: '开普敦 (CPT)', address: 'Western Cape, Cape Town' },
-  { id: 'DUR', name: '德班 (DUR)', address: 'KwaZulu-Natal, Durban' },
-  { id: 'PLZ', name: '伊丽莎白港 (PLZ)', address: 'Eastern Cape, Port Elizabeth' },
-  { id: 'BFN', name: '布隆方丹 (BFN)', address: 'Free State, Bloemfontein' },
+  { code: 'JNB', name: '约翰内斯堡仓', color: 'bg-blue-100 text-blue-800' },
+  { code: 'CPT', name: '开普敦仓', color: 'bg-green-100 text-green-800' },
+  { code: 'DBN', name: '德班仓', color: 'bg-purple-100 text-purple-800' },
+  { code: 'PLZ', name: '伊丽莎白港仓', color: 'bg-orange-100 text-orange-800' },
 ];
+
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
+  draft: { label: '草稿', color: 'bg-gray-100 text-gray-700', icon: FileText },
+  created: { label: '已创建', color: 'bg-blue-100 text-blue-700', icon: CheckCircle },
+  dispatched: { label: '已发货', color: 'bg-purple-100 text-purple-700', icon: Truck },
+  delivered: { label: '已送达', color: 'bg-green-100 text-green-700', icon: CheckCircle },
+  cancelled: { label: '已取消', color: 'bg-red-100 text-red-700', icon: XCircle },
+};
 
 export default function PurchaseOrdersPage() {
   const [pos, setPos] = useState<PO[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [showDetail, setShowDetail] = useState<PO | null>(null);
-  const [detailItems, setDetailItems] = useState<POItem[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [error, setError] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [stores, setStores] = useState<Store[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [warehouseFilter, setWarehouseFilter] = useState('all');
 
-  const [form, setForm] = useState({ notes: '', warehouse: 'JHB' });
-  const [items, setItems] = useState<{ product_id: number; quantity: number }[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState('');
-  const [quantity, setQuantity] = useState('1');
+  // 统计
+  const [stats, setStats] = useState({
+    total: 0,
+    draft: 0,
+    created: 0,
+    dispatched: 0,
+    delivered: 0,
+    cancelled: 0,
+  });
 
-  const fetchPOs = async () => {
-    setLoading(true);
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
     try {
-      const params = new URLSearchParams();
-      if (search) params.set('search', search);
-      if (statusFilter) params.set('status', statusFilter);
-      const res = await fetch(`/api/purchase-orders?${params}`);
-      const json = await res.json();
-      setPos(json.purchase_orders || []);
-    } catch (e) {
-      console.error(e);
+      const [poRes, productRes, storeRes] = await Promise.all([
+        fetch('/api/purchase-orders'),
+        fetch('/api/products'),
+        fetch('/api/stores'),
+      ]);
+      const poData = await poRes.json();
+      const productData = await productRes.json();
+      const storeData = await storeRes.json();
+
+      setPos(poData.purchase_orders || []);
+      setProducts(productData.products || []);
+      setStores(storeData.stores || []);
+
+      // 计算统计
+      const posList = poData.purchase_orders || [];
+      setStats({
+        total: posList.length,
+        draft: posList.filter((p: PO) => p.status === 'draft').length,
+        created: posList.filter((p: PO) => p.status === 'created').length,
+        dispatched: posList.filter((p: PO) => p.status === 'dispatched').length,
+        delivered: posList.filter((p: PO) => p.status === 'delivered').length,
+        cancelled: posList.filter((p: PO) => p.status === 'cancelled').length,
+      });
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchProducts = async () => {
-    try {
-      const res = await fetch('/api/products');
-      const json = await res.json();
-      setProducts(json.products || []);
-    } catch (e) {
-      console.error(e);
-    }
+  const getStatusBadge = (status: string) => {
+    const config = STATUS_CONFIG[status] || STATUS_CONFIG.draft;
+    const Icon = config.icon;
+    return (
+      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${config.color}`}>
+        <Icon className="w-3 h-3" />
+        {config.label}
+      </span>
+    );
   };
 
-  useEffect(() => {
-    fetchPOs();
-    fetchProducts();
-  }, [search, statusFilter]);
+  const getWarehouseBadge = (warehouse: string) => {
+    const wh = WAREHOUSES.find(w => w.code === warehouse);
+    if (!wh) return <span className="text-gray-500">{warehouse}</span>;
+    return (
+      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${wh.color}`}>
+        {wh.code}
+      </span>
+    );
+  };
 
-  const handleCreate = async () => {
-    if (items.length === 0) {
-      setError('至少需要添加一个产品');
+  const filteredPOs = pos.filter(po => {
+    const matchSearch = po.po_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                       po.platform_shipment_id.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchStatus = statusFilter === 'all' || po.status === statusFilter;
+    const matchWarehouse = warehouseFilter === 'all' || po.destination_warehouse === warehouseFilter;
+    return matchSearch && matchStatus && matchWarehouse;
+  });
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* 页面标题 */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">发货单管理</h1>
+          <p className="text-sm text-gray-500 mt-1">运营 / 发货单管理 (领星备货中转出库)</p>
+        </div>
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          新建发货单
+        </button>
+      </div>
+
+      {/* 统计卡片 */}
+      <div className="grid grid-cols-5 gap-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <p className="text-sm text-gray-500">发货单总数</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{stats.total}</p>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <p className="text-sm text-gray-500">草稿</p>
+          <p className="text-2xl font-bold text-gray-600 mt-1">{stats.draft}</p>
+          <p className="text-xs text-gray-400 mt-1">未发货·未取消</p>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <p className="text-sm text-gray-500">已创建</p>
+          <p className="text-2xl font-bold text-blue-600 mt-1">{stats.created}</p>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <p className="text-sm text-gray-500">已发货</p>
+          <p className="text-2xl font-bold text-purple-600 mt-1">{stats.dispatched}</p>
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <p className="text-sm text-gray-500">已送达</p>
+          <p className="text-2xl font-bold text-green-600 mt-1">{stats.delivered}</p>
+        </div>
+      </div>
+
+      {/* 筛选栏 */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="flex items-center gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="搜 PO 号 / shipment_id"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">全部状态</option>
+            <option value="draft">草稿</option>
+            <option value="created">已创建</option>
+            <option value="dispatched">已发货</option>
+            <option value="delivered">已送达</option>
+            <option value="cancelled">已取消</option>
+          </select>
+          <select
+            value={warehouseFilter}
+            onChange={(e) => setWarehouseFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">全部仓库</option>
+            {WAREHOUSES.map(wh => (
+              <option key={wh.code} value={wh.code}>{wh.name}</option>
+            ))}
+          </select>
+          <button
+            onClick={fetchData}
+            className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+          >
+            刷新
+          </button>
+          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors">
+            导出
+          </button>
+        </div>
+      </div>
+
+      {/* PO 列表 */}
+      <div className="bg-white rounded-lg border border-gray-200">
+        <div className="px-4 py-3 border-b border-gray-200">
+          <h3 className="text-sm font-medium text-gray-900">发货单列表</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">时间</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">PO 编号</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">店铺</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">目的仓</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">总量</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">shipment_id</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {filteredPOs.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-12 text-center text-gray-500">
+                    <Package className="w-12 h-12 mx-auto text-gray-300 mb-2" />
+                    <p>暂无发货单</p>
+                    <p className="text-xs text-gray-400 mt-1">点击"新建发货单"开始创建</p>
+                  </td>
+                </tr>
+              ) : (
+                filteredPOs.map(po => (
+                  <tr key={po.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 text-sm text-gray-500">
+                      {new Date(po.created_at).toLocaleDateString('zh-CN')}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-sm font-medium text-gray-900">{po.po_number}</span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{po.store_name}</td>
+                    <td className="px-4 py-3">{getWarehouseBadge(po.destination_warehouse)}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900 font-medium">{po.total_quantity}</td>
+                    <td className="px-4 py-3 text-sm text-gray-500">
+                      {po.platform_shipment_id || '-'}
+                    </td>
+                    <td className="px-4 py-3">{getStatusBadge(po.status)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <button className="text-xs text-blue-600 hover:text-blue-800">
+                          查看
+                        </button>
+                        {po.status !== 'draft' && (
+                          <button className="text-xs text-purple-600 hover:text-purple-800">
+                            下载标签
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* 创建 PO 模态框 */}
+      {showCreateModal && (
+        <CreatePOModal
+          products={products}
+          stores={stores}
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            setShowCreateModal(false);
+            fetchData();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// 创建 PO 模态框组件
+function CreatePOModal({
+  products,
+  stores,
+  onClose,
+  onSuccess,
+}: {
+  products: Product[];
+  stores: Store[];
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [selectedStore, setSelectedStore] = useState('');
+  const [selectedWarehouse, setSelectedWarehouse] = useState('');
+  const [items, setItems] = useState<Array<{ product_id: number; quantity: number }>>([]);
+  const [selectedProduct, setSelectedProduct] = useState('');
+  const [quantity, setQuantity] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const addItem = () => {
+    if (!selectedProduct || !quantity) return;
+    const existing = items.find(item => item.product_id === parseInt(selectedProduct));
+    if (existing) {
+      setItems(items.map(item =>
+        item.product_id === parseInt(selectedProduct)
+          ? { ...item, quantity: item.quantity + parseInt(quantity) }
+          : item
+      ));
+    } else {
+      setItems([...items, { product_id: parseInt(selectedProduct), quantity: parseInt(quantity) }]);
+    }
+    setSelectedProduct('');
+    setQuantity('');
+  };
+
+  const removeItem = (productId: number) => {
+    setItems(items.filter(item => item.product_id !== productId));
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedStore || !selectedWarehouse || items.length === 0) {
+      alert('请选择店铺、仓库并添加产品');
       return;
     }
-    setSaving(true);
-    setError('');
+
+    setLoading(true);
     try {
       const res = await fetch('/api/purchase-orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          warehouse: form.warehouse,
-          notes: form.notes,
-          items,
+          store_id: parseInt(selectedStore),
+          destination_warehouse: selectedWarehouse,
+          items: items,
         }),
       });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(json.error || '创建失败');
-        return;
-      }
-      setShowModal(false);
-      setForm({ notes: '', warehouse: 'JHB' });
-      setItems([]);
-      fetchPOs();
-    } catch (e) {
-      setError('网络错误');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const addItem = () => {
-    if (!selectedProduct) {
-      setError('请选择产品');
-      return;
-    }
-    const qty = parseInt(quantity);
-    if (qty < 1) {
-      setError('数量至少为 1');
-      return;
-    }
-    const existing = items.find((i) => i.product_id === parseInt(selectedProduct));
-    if (existing) {
-      setItems(items.map((i) => (i.product_id === parseInt(selectedProduct) ? { ...i, quantity: i.quantity + qty } : i)));
-    } else {
-      setItems([...items, { product_id: parseInt(selectedProduct), quantity: qty }]);
-    }
-    setSelectedProduct('');
-    setQuantity('1');
-    setError('');
-  };
-
-  const removeItem = (productId: number) => {
-    setItems(items.filter((i) => i.product_id !== productId));
-  };
-
-  const handleStatusUpdate = async (id: number, status: string) => {
-    try {
-      const res = await fetch(`/api/purchase-orders/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-      });
-      if (res.ok) fetchPOs();
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const handleDelete = async (id: number) => {
-    if (!confirm('确定要删除这个 PO 单吗？')) return;
-    try {
-      const res = await fetch(`/api/purchase-orders/${id}`, { method: 'DELETE' });
+      const data = await res.json();
       if (res.ok) {
-        fetchPOs();
-        if (showDetail?.id === id) setShowDetail(null);
+        onSuccess();
+      } else {
+        alert(data.error || '创建失败');
       }
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      alert('网络错误');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const viewDetail = async (po: PO) => {
-    setShowDetail(po);
-    try {
-      const res = await fetch(`/api/purchase-orders/${po.id}`);
-      const json = await res.json();
-      setDetailItems(json.items || []);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const getProductInfo = (productId: number) => {
-    return products.find((p) => p.id === productId);
-  };
+  const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <div>
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 text-sm text-[#64748b] mb-1">
-          <span>首页</span>
-          <span>/</span>
-          <span className="text-[#0f172a]">PO 建单</span>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900">新建发货单</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <XCircle className="w-5 h-5" />
+          </button>
         </div>
-        <h1 className="text-xl font-semibold text-[#0f172a]">PO 建单</h1>
-        <p className="text-sm text-[#64748b] mt-1">创建和管理采购订单（货件），跟踪发货状态</p>
-      </div>
 
-      {/* Actions */}
-      <div className="bg-white rounded-lg border border-[#e2e8f0] p-4 mb-6">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8]" />
-            <input
-              type="text"
-              placeholder="搜索 PO 编号..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0070f3]/20 focus:border-[#0070f3]"
-            />
+        <div className="p-6 space-y-6">
+          {/* 基本信息 */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">店铺</label>
+              <select
+                value={selectedStore}
+                onChange={(e) => setSelectedStore(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">选择店铺</option>
+                {stores.map(store => (
+                  <option key={store.id} value={store.id}>{store.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">目的仓库</label>
+              <select
+                value={selectedWarehouse}
+                onChange={(e) => setSelectedWarehouse(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">选择仓库</option>
+                {WAREHOUSES.map(wh => (
+                  <option key={wh.code} value={wh.code}>{wh.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-[#94a3b8]" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0070f3]/20 focus:border-[#0070f3]"
-            >
-              <option value="">全部状态</option>
-              <option value="pending">待发货</option>
-              <option value="shipped">已发货</option>
-              <option value="delivered">已送达</option>
-              <option value="cancelled">已取消</option>
-            </select>
+
+          {/* 添加产品 */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-gray-900 mb-3">添加产品</h3>
+            <div className="flex gap-3">
+              <select
+                value={selectedProduct}
+                onChange={(e) => setSelectedProduct(e.target.value)}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">选择产品</option>
+                {products.map(product => (
+                  <option key={product.id} value={product.id}>
+                    {product.sku} - {product.title} (成本: R{product.cost_price})
+                  </option>
+                ))}
+              </select>
+              <input
+                type="number"
+                placeholder="数量"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                className="w-24 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                onClick={addItem}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+              >
+                添加
+              </button>
+            </div>
           </div>
+
+          {/* 产品清单 */}
+          {items.length > 0 && (
+            <div className="border border-gray-200 rounded-lg">
+              <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+                <h3 className="text-sm font-medium text-gray-900">产品清单 ({items.length} 种，共 {totalQuantity} 件)</h3>
+              </div>
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">SKU</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">产品名称</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">数量</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">成本价</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">小计</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">操作</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {items.map(item => {
+                    const product = products.find(p => p.id === item.product_id);
+                    if (!product) return null;
+                    return (
+                      <tr key={item.product_id}>
+                        <td className="px-4 py-2 text-sm font-mono text-gray-900">{product.sku}</td>
+                        <td className="px-4 py-2 text-sm text-gray-600">{product.title}</td>
+                        <td className="px-4 py-2 text-sm text-gray-900 font-medium">{item.quantity}</td>
+                        <td className="px-4 py-2 text-sm text-gray-600">R{product.cost_price}</td>
+                        <td className="px-4 py-2 text-sm text-gray-900 font-medium">R{(product.cost_price * item.quantity).toFixed(2)}</td>
+                        <td className="px-4 py-2">
+                          <button
+                            onClick={() => removeItem(item.product_id)}
+                            className="text-red-600 hover:text-red-800 text-sm"
+                          >
+                            删除
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end gap-3">
           <button
-            onClick={() => {
-              setShowModal(true);
-              setError('');
-              setForm({ notes: '', warehouse: 'JHB' });
-              setItems([]);
-              setSelectedProduct('');
-              setQuantity('1');
-            }}
-            className="px-4 py-2 bg-[#0070f3] text-white rounded-lg text-sm font-medium hover:bg-[#0060df] transition-colors flex items-center gap-2"
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
           >
-            <Plus className="w-4 h-4" />
-            创建 PO 单
+            取消
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
+          >
+            {loading ? '创建中...' : '创建发货单'}
           </button>
         </div>
       </div>
-
-      {/* PO List */}
-      <div className="bg-white rounded-lg border border-[#e2e8f0]">
-        <div className="px-6 py-4 border-b border-[#e2e8f0]">
-          <h2 className="font-medium text-[#0f172a]">采购订单列表</h2>
-        </div>
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="w-6 h-6 border-2 border-[#0070f3] border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        ) : pos.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-[#94a3b8]">
-            <FileText className="w-12 h-12 mb-3" />
-            <p className="text-sm">暂无采购订单</p>
-            <p className="text-xs mt-1">点击"创建 PO 单"开始</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-[#e2e8f0] text-xs text-[#64748b] uppercase">
-                  <th className="px-6 py-3 text-left font-medium">PO 编号</th>
-                  <th className="px-6 py-3 text-left font-medium">目的地仓库</th>
-                  <th className="px-6 py-3 text-left font-medium">产品数</th>
-                  <th className="px-6 py-3 text-left font-medium">总数量</th>
-                  <th className="px-6 py-3 text-left font-medium">状态</th>
-                  <th className="px-6 py-3 text-left font-medium">创建时间</th>
-                  <th className="px-6 py-3 text-right font-medium">操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pos.map((po) => {
-                  const st = statusMap[po.status] || statusMap.pending;
-                  const StatusIcon = st.icon;
-                  return (
-                    <tr key={po.id} className="border-b border-[#e2e8f0] last:border-0 hover:bg-[#f8fafc]">
-                      <td className="px-6 py-4">
-                        <button onClick={() => viewDetail(po)} className="text-[#0070f3] hover:underline font-mono text-sm">
-                          {po.po_number}
-                        </button>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-[#0f172a]">{po.destination_warehouse}</td>
-                      <td className="px-6 py-4 text-sm text-[#0f172a]">{po.total_items}</td>
-                      <td className="px-6 py-4 text-sm text-[#0f172a]">{po.total_quantity}</td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border ${st.color}`}>
-                          <StatusIcon className="w-3 h-3" />
-                          {st.label}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-[#64748b]">{po.created_at}</td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          {po.status === 'pending' && (
-                            <button
-                              onClick={() => handleStatusUpdate(po.id, 'shipped')}
-                              className="px-2.5 py-1 text-xs bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
-                            >
-                              标记发货
-                            </button>
-                          )}
-                          {po.status === 'shipped' && (
-                            <button
-                              onClick={() => handleStatusUpdate(po.id, 'delivered')}
-                              className="px-2.5 py-1 text-xs bg-green-50 text-green-600 rounded hover:bg-green-100 transition-colors"
-                            >
-                              标记送达
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleDelete(po.id)}
-                            className="p-1.5 text-[#94a3b8] hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* Create Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e2e8f0]">
-              <h3 className="text-lg font-semibold text-[#0f172a]">创建 PO 单</h3>
-              <button onClick={() => setShowModal(false)} className="p-1 hover:bg-[#f1f5f9] rounded-lg transition-colors">
-                <X className="w-5 h-5 text-[#64748b]" />
-              </button>
-            </div>
-            <div className="p-6">
-              {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{error}</div>
-              )}
-
-              {/* 选择目的地仓库 */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-[#0f172a] mb-2">
-                  目的地仓库 <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={form.warehouse}
-                  onChange={(e) => setForm({ ...form, warehouse: e.target.value })}
-                  className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0070f3]/20 focus:border-[#0070f3]"
-                >
-                  {WAREHOUSES.map((w) => (
-                    <option key={w.id} value={w.id}>
-                      {w.name} - {w.address}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* 添加产品 */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-[#0f172a] mb-2">添加产品</label>
-                <div className="flex gap-2">
-                  <select
-                    value={selectedProduct}
-                    onChange={(e) => setSelectedProduct(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0070f3]/20 focus:border-[#0070f3]"
-                  >
-                    <option value="">选择产品...</option>
-                    {products.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.sku} - {p.name} (R {p.cost_price.toFixed(2)})
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="number"
-                    min="1"
-                    value={quantity}
-                    onChange={(e) => setQuantity(e.target.value)}
-                    className="w-24 px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0070f3]/20 focus:border-[#0070f3]"
-                    placeholder="数量"
-                  />
-                  <button
-                    onClick={addItem}
-                    className="px-4 py-2 bg-[#0070f3] text-white rounded-lg text-sm hover:bg-[#0060df] transition-colors flex items-center gap-1"
-                  >
-                    <Plus className="w-4 h-4" />
-                    添加
-                  </button>
-                </div>
-              </div>
-
-              {/* 产品清单 */}
-              {items.length > 0 && (
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-[#0f172a] mb-2">
-                    产品清单 ({items.length} 个产品)
-                  </label>
-                  <div className="border border-[#e2e8f0] rounded-lg overflow-hidden">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="bg-[#f8fafc] text-xs text-[#64748b]">
-                          <th className="px-4 py-2 text-left">SKU</th>
-                          <th className="px-4 py-2 text-left">产品</th>
-                          <th className="px-4 py-2 text-center">数量</th>
-                          <th className="px-4 py-2 text-right">操作</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {items.map((item) => {
-                          const product = getProductInfo(item.product_id);
-                          return (
-                            <tr key={item.product_id} className="border-t border-[#e2e8f0]">
-                              <td className="px-4 py-2 text-sm font-mono">{product?.sku || '-'}</td>
-                              <td className="px-4 py-2 text-sm">{product?.name || '-'}</td>
-                              <td className="px-4 py-2 text-sm text-center">{item.quantity}</td>
-                              <td className="px-4 py-2 text-right">
-                                <button
-                                  onClick={() => removeItem(item.product_id)}
-                                  className="p-1 text-[#94a3b8] hover:text-red-500 transition-colors"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {/* 备注 */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-[#0f172a] mb-2">备注（可选）</label>
-                <textarea
-                  value={form.notes}
-                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-[#e2e8f0] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#0070f3]/20 focus:border-[#0070f3]"
-                  placeholder="添加备注信息..."
-                />
-              </div>
-            </div>
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#e2e8f0]">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 text-sm text-[#64748b] hover:bg-[#f1f5f9] rounded-lg transition-colors"
-              >
-                取消
-              </button>
-              <button
-                onClick={handleCreate}
-                disabled={saving || items.length === 0}
-                className="px-4 py-2 bg-[#0070f3] text-white rounded-lg text-sm font-medium hover:bg-[#0060df] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {saving ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    创建中...
-                  </>
-                ) : (
-                  <>
-                    <ShoppingCart className="w-4 h-4" />
-                    创建 PO 单
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Detail Modal */}
-      {showDetail && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e2e8f0]">
-              <h3 className="text-lg font-semibold text-[#0f172a]">PO 详情 - {showDetail.po_number}</h3>
-              <button onClick={() => setShowDetail(null)} className="p-1 hover:bg-[#f1f5f9] rounded-lg transition-colors">
-                <X className="w-5 h-5 text-[#64748b]" />
-              </button>
-            </div>
-            <div className="p-6">
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div>
-                  <div className="text-xs text-[#64748b] mb-1">目的地仓库</div>
-                  <div className="text-sm font-medium text-[#0f172a]">{showDetail.destination_warehouse}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-[#64748b] mb-1">状态</div>
-                  <div className="text-sm font-medium text-[#0f172a]">
-                    {statusMap[showDetail.status]?.label || showDetail.status}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-[#64748b] mb-1">产品数</div>
-                  <div className="text-sm font-medium text-[#0f172a]">{showDetail.total_items}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-[#64748b] mb-1">总数量</div>
-                  <div className="text-sm font-medium text-[#0f172a]">{showDetail.total_quantity}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-[#64748b] mb-1">创建时间</div>
-                  <div className="text-sm font-medium text-[#0f172a]">{showDetail.created_at}</div>
-                </div>
-                <div>
-                  <div className="text-xs text-[#64748b] mb-1">更新时间</div>
-                  <div className="text-sm font-medium text-[#0f172a]">{showDetail.updated_at}</div>
-                </div>
-              </div>
-              {showDetail.notes && (
-                <div className="mb-6">
-                  <div className="text-xs text-[#64748b] mb-1">备注</div>
-                  <div className="text-sm text-[#0f172a] p-3 bg-[#f8fafc] rounded-lg">{showDetail.notes}</div>
-                </div>
-              )}
-              <div>
-                <div className="text-sm font-medium text-[#0f172a] mb-3">产品明细</div>
-                <div className="border border-[#e2e8f0] rounded-lg overflow-hidden">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-[#f8fafc] text-xs text-[#64748b]">
-                        <th className="px-4 py-2 text-left">SKU</th>
-                        <th className="px-4 py-2 text-left">产品</th>
-                        <th className="px-4 py-2 text-center">数量</th>
-                        <th className="px-4 py-2 text-right">单价</th>
-                        <th className="px-4 py-2 text-right">小计</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {detailItems.map((item) => (
-                        <tr key={item.id} className="border-t border-[#e2e8f0]">
-                          <td className="px-4 py-2 text-sm font-mono">{item.sku}</td>
-                          <td className="px-4 py-2 text-sm">{item.product_name}</td>
-                          <td className="px-4 py-2 text-sm text-center">{item.quantity}</td>
-                          <td className="px-4 py-2 text-sm text-right">R {item.cost_price.toFixed(2)}</td>
-                          <td className="px-4 py-2 text-sm text-right font-medium">R {item.subtotal.toFixed(2)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center justify-end px-6 py-4 border-t border-[#e2e8f0]">
-              <button
-                onClick={() => setShowDetail(null)}
-                className="px-4 py-2 text-sm text-[#64748b] hover:bg-[#f1f5f9] rounded-lg transition-colors"
-              >
-                关闭
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
