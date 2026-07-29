@@ -74,6 +74,8 @@ function initSchema(db: Database.Database): void {
       selling_price REAL NOT NULL DEFAULT 0,
       image_url TEXT DEFAULT '',
       takealot_product_id TEXT DEFAULT '',
+      stock_quantity INTEGER DEFAULT 0,
+      stock_available INTEGER DEFAULT 0,
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now'))
     );

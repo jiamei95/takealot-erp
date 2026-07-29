@@ -11,6 +11,8 @@ interface Product {
   selling_price: number;
   image_url: string;
   takealot_product_id: string;
+  stock_quantity: number;
+  stock_available: number;
   created_at: string;
 }
 
@@ -192,8 +194,10 @@ export default function ProductsPage() {
             <table className="data-table">
               <thead>
                 <tr>
+                  <th>{'\u56fe\u7247'}</th>
                   <th>SKU</th>
                   <th>{'\u4ea7\u54c1\u540d\u79f0'}</th>
+                  <th>{'\u5e93\u5b58'}</th>
                   <th>{'\u6210\u672c\u4ef7'}</th>
                   <th>{'\u552e\u4ef7'}</th>
                   <th>{'\u5229\u6da6\u7387'}</th>
@@ -212,10 +216,56 @@ export default function ProductsPage() {
                       : '0.0';
                   return (
                     <tr key={p.id}>
+                      <td>
+                        {p.image_url ? (
+                          <img
+                            src={p.image_url}
+                            alt={p.name}
+                            style={{
+                              width: 40,
+                              height: 40,
+                              objectFit: 'cover',
+                              borderRadius: 4,
+                              border: '1px solid #e2e8f0',
+                            }}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: 40,
+                              height: 40,
+                              background: '#f1f5f9',
+                              borderRadius: 4,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#94a3b8',
+                              fontSize: 10,
+                            }}
+                          >
+                            {'\u65e0\u56fe'}
+                          </div>
+                        )}
+                      </td>
                       <td style={{ fontFamily: 'monospace', fontWeight: 600, fontSize: 12 }}>
                         {p.sku}
                       </td>
-                      <td style={{ fontWeight: 500 }}>{p.name}</td>
+                      <td style={{ fontWeight: 500, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {p.name}
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600 }}>
+                            {p.stock_available ?? 0}
+                          </span>
+                          <span style={{ fontSize: 10, color: '#64748b' }}>
+                            {'\u53ef\u552e'}
+                          </span>
+                        </div>
+                      </td>
                       <td>{formatZAR(p.cost_price)}</td>
                       <td>{formatZAR(p.selling_price)}</td>
                       <td

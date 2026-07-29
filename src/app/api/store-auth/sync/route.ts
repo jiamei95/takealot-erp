@@ -27,6 +27,16 @@ interface TakealotOffer {
   status: 'buyable' | 'not_buyable' | 'disabled_by_seller' | 'disabled_by_takealot';
   created_at?: string;
   updated_at?: string;
+  // 图片相关
+  image_url?: string;
+  images?: Array<{ url: string; is_primary?: boolean }>;
+  // 库存相关
+  stock_quantity?: number;
+  stock_available?: number;
+  inventory?: {
+    quantity?: number;
+    available?: number;
+  };
 }
 
 interface TakealotShipmentItem {
@@ -160,12 +170,15 @@ async function syncOffers(db: ReturnType<typeof getDb>, baseUrl: string, apiKey:
       if (items.length === 0) break;
 
       const upsert = db.prepare(`
-        INSERT INTO products (sku, name, cost_price, selling_price, image_url, takealot_product_id, created_at, updated_at)
-        VALUES (?, ?, 0, ?, '', ?, datetime('now'), datetime('now'))
+        INSERT INTO products (sku, name, cost_price, selling_price, image_url, takealot_product_id, stock_quantity, stock_available, created_at, updated_at)
+        VALUES (?, ?, 0, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
         ON CONFLICT(sku) DO UPDATE SET
           name = COALESCE(excluded.name, name),
           selling_price = excluded.selling_price,
+          image_url = excluded.image_url,
           takealot_product_id = excluded.takealot_product_id,
+          stock_quantity = excluded.stock_quantity,
+          stock_available = excluded.stock_available,
           updated_at = datetime('now')
       `);
 
@@ -175,7 +188,22 @@ async function syncOffers(db: ReturnType<typeof getDb>, baseUrl: string, apiKey:
           const name = offer.title || offer.product_label || sku;
           const price = offer.selling_price || 0;
           const takealotId = offer.offer_id || '';
-          upsert.run(sku, name, price, takealotId);
+          
+          // 获取图片 URL
+          let imageUrl = '';
+          if (offer.image_url) {
+            imageUrl = offer.image_url;
+          } else if (offer.images && offer.images.length > 0) {
+            // 优先获取主图
+            const primaryImage = offer.images.find(img => img.is_primary) || offer.images[0];
+            imageUrl = primaryImage.url || '';
+          }
+          
+          // 获取库存
+          const stockQuantity = offer.stock_quantity ?? offer.inventory?.quantity ?? 0;
+          const stockAvailable = offer.stock_available ?? offer.inventory?.available ?? 0;
+          
+          upsert.run(sku, name, price, imageUrl, takealotId, stockQuantity, stockAvailable);
         }
       });
       tx(items);
