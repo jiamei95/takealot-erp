@@ -231,9 +231,8 @@ export default function ProductsPage() {
           </p>
         </div>
       ) : (
-        <div className="card">
-          <div style={{ overflowX: 'auto' }}>
-            <table className="data-table">
+        <div className="card" style={{ overflowX: 'auto' }}>
+          <table className="data-table">
               <thead>
                 <tr>
                   <th>{'\u56fe\u7247'}</th>
@@ -368,7 +367,6 @@ export default function ProductsPage() {
                 })}
               </tbody>
             </table>
-          </div>
         </div>
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0', marginTop: 16 }}>
