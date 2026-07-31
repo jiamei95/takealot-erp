@@ -231,8 +231,9 @@ export default function ProductsPage() {
           </p>
         </div>
       ) : (
-        <div className="card" style={{ overflowX: 'auto' }}>
-          <table className="data-table">
+        <>
+          <div className="card" style={{ overflowX: 'auto' }}>
+            <table className="data-table">
               <thead>
                 <tr>
                   <th>{'\u56fe\u7247'}</th>
@@ -367,9 +368,9 @@ export default function ProductsPage() {
                 })}
               </tbody>
             </table>
-        </div>
+          </div>
         
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0', marginTop: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 0', marginTop: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#64748b' }}>
             <span>每页显示</span>
             <select 
@@ -414,6 +415,7 @@ export default function ProductsPage() {
             </button>
           </div>
         </div>
+        </>
       )}
 
       {showModal && (
