@@ -51,8 +51,16 @@ export default function ProductsPage() {
   const [error, setError] = useState('');
   const [warehouseStock, setWarehouseStock] = useState<Map<number, WarehouseStock[]>>(new Map());
   const [selectedProduct, setSelectedProduct] = useState<number | null>(null);
+  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
 
-  const fetchProducts = useCallback(async () => {
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 分钟缓存
+
+  const fetchProducts = useCallback(async (forceRefresh = false) => {
+    const now = Date.now();
+    if (!forceRefresh && lastFetchTime > 0 && (now - lastFetchTime) < CACHE_DURATION) {
+      return; // 使用缓存
+    }
+    
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -62,26 +70,21 @@ export default function ProductsPage() {
       setProducts(json.products);
       setTotal(json.total);
       
-      // 获取每个产品的仓库库存
+      // 从 API 返回的数据中提取仓库库存
       const warehouseMap = new Map<number, WarehouseStock[]>();
       for (const product of json.products) {
-        try {
-          const stockRes = await fetch(`/api/products/${product.id}/warehouse-stock`);
-          const stockJson = await stockRes.json();
-          if (stockJson.success && stockJson.data.warehouse_stock) {
-            warehouseMap.set(product.id, stockJson.data.warehouse_stock);
-          }
-        } catch (err) {
-          console.error(`Failed to fetch warehouse stock for product ${product.id}:`, err);
+        if (product.warehouse_stock && product.warehouse_stock.length > 0) {
+          warehouseMap.set(product.id, product.warehouse_stock);
         }
       }
       setWarehouseStock(warehouseMap);
+      setLastFetchTime(now);
     } catch (err) {
       console.error('Failed to fetch products:', err);
     } finally {
       setLoading(false);
     }
-  }, [search]);
+  }, [search, lastFetchTime]);
 
   useEffect(() => {
     fetchProducts();
@@ -178,19 +181,27 @@ export default function ProductsPage() {
           />
           <input
             type="text"
-            placeholder={'\u6309 SKU \u6216\u540d\u79f0\u641c\u7d22...'}
+            placeholder="按 SKU 或名称搜索..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{ paddingLeft: 32, width: 260 }}
           />
         </div>
-        <span style={{ fontSize: 12, color: '#64748b' }}>
-          {'\u5171'} {total} {'\u4e2a\u4ea7\u54c1'}
+        <span style={{ fontSize: 13, color: '#16a34a', fontWeight: 600 }}>
+          共 {total} 个产品
         </span>
         <div style={{ flex: 1 }} />
+        <button 
+          className="btn btn-secondary" 
+          onClick={() => fetchProducts(true)}
+          title="刷新数据"
+        >
+          <RefreshCw size={14} />
+          刷新
+        </button>
         <button className="btn btn-primary" onClick={openCreate}>
           <Plus size={14} />
-          {'\u65b0\u5efa\u4ea7\u54c1'}
+          新建产品
         </button>
       </div>
 

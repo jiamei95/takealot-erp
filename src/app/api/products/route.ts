@@ -23,7 +23,33 @@ export async function GET(request: NextRequest) {
   const total = (db.prepare(`SELECT COUNT(*) as cnt FROM products p ${where}`).get(...params) as { cnt: number }).cnt;
   const products = db.prepare(`SELECT p.* FROM products p ${where} ORDER BY p.id DESC LIMIT ? OFFSET ?`).all(...params, pageSize, offset);
 
-  return jsonResponse({ products, total, page, page_size: pageSize }, request);
+  // 批量获取所有产品的仓库库存
+  const productIds = products.map((p: any) => p.id);
+  let warehouseStockMap = new Map<number, any[]>();
+  
+  if (productIds.length > 0) {
+    const warehouseStock = db.prepare(`
+      SELECT * FROM product_warehouse_stock 
+      WHERE product_id IN (${productIds.join(',')})
+      ORDER BY warehouse_name
+    `).all();
+    
+    // 按 product_id 分组
+    for (const ws of warehouseStock as any[]) {
+      if (!warehouseStockMap.has(ws.product_id)) {
+        warehouseStockMap.set(ws.product_id, []);
+      }
+      warehouseStockMap.get(ws.product_id)!.push(ws);
+    }
+  }
+
+  // 将仓库库存附加到产品对象中
+  const productsWithStock = products.map((p: any) => ({
+    ...p,
+    warehouse_stock: warehouseStockMap.get(p.id) || [],
+  }));
+
+  return jsonResponse({ products: productsWithStock, total, page, page_size: pageSize }, request);
 }
 
 export async function POST(request: NextRequest) {
