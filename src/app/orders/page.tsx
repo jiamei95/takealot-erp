@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Search, Package } from 'lucide-react';
+import { Search, Package, RefreshCw } from 'lucide-react';
 
 interface Order {
   id: number;
@@ -41,9 +41,17 @@ export default function OrdersPage() {
   const [store, setStore] = useState('');
   const [stores, setStores] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [lastFetchTime, setLastFetchTime] = useState(0);
   const pageSize = 30;
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 分钟缓存
 
-  const fetchOrders = useCallback(async () => {
+  const fetchOrders = useCallback(async (forceRefresh = false) => {
+    const now = Date.now();
+    // 如果有缓存且未过期，不强制刷新时直接使用缓存
+    if (!forceRefresh && lastFetchTime > 0 && now - lastFetchTime < CACHE_DURATION) {
+      return;
+    }
+    
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -57,12 +65,13 @@ export default function OrdersPage() {
       const json = await res.json();
       setOrders(json.orders);
       setTotal(json.total);
+      setLastFetchTime(now);
     } catch (err) {
       console.error('Failed to fetch orders:', err);
     } finally {
       setLoading(false);
     }
-  }, [page, search, status, store]);
+  }, [page, search, status, store, lastFetchTime]);
 
   useEffect(() => {
     fetch('/api/stores')
@@ -137,6 +146,15 @@ export default function OrdersPage() {
         <span style={{ fontSize: 12, color: '#64748b' }}>
           {'\u5171'} {total} {'\u4e2a\u8ba2\u5355'}
         </span>
+        <button
+          className="btn btn-secondary"
+          onClick={() => fetchOrders(true)}
+          title={'\u5237\u65b0\u6570\u636e'}
+          style={{ marginLeft: 'auto' }}
+        >
+          <RefreshCw size={14} />
+          {'\u5237\u65b0'}
+        </button>
       </div>
 
       {loading ? (
