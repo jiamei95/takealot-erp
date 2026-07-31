@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Plus, Pencil, Trash2, Search, X, Package } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, X, Package, RefreshCw } from 'lucide-react';
 
 interface Product {
   id: number;
