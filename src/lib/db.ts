@@ -7,49 +7,56 @@ const DB_PATH = process.env.NODE_ENV === 'production'
   ? '/tmp/erp.db'
   : path.join(process.cwd(), 'data', 'erp.db');
 
-// 使用 globalThis 确保跨模块单例
-const globalForDb = globalThis as unknown as {
-  _erp_db: Database.Database | undefined;
-  _erp_db_ready: boolean;
-};
-
-// 初始化标记
-globalForDb._erp_db_ready = false;
+// 单例数据库连接
+let dbInstance: Database.Database | null = null;
+let isInitializing = false;
+const initQueue: Array<() => void> = [];
 
 export function getDb(): Database.Database {
-  // 如果已有连接且健康，直接返回
-  if (globalForDb._erp_db && globalForDb._erp_db_ready) {
-    return globalForDb._erp_db;
+  // 如果已有连接，直接返回
+  if (dbInstance) {
+    return dbInstance;
   }
 
-  // 确保目录存在
-  const dir = path.dirname(DB_PATH);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+  // 如果正在初始化，等待完成
+  if (isInitializing) {
+    throw new Error('Database is initializing, please retry');
   }
 
-  // 创建新连接
-  const db = new Database(DB_PATH, {
-    fileMustExist: false,
-    readonly: false,
-  });
+  isInitializing = true;
 
-  // 配置优化
-  db.pragma('journal_mode = WAL');
-  db.pragma('busy_timeout = 10000');
-  db.pragma('cache_size = -64000'); // 64MB 缓存
-  db.pragma('synchronous = NORMAL');
-  db.pragma('temp_store = MEMORY');
+  try {
+    // 确保目录存在
+    const dir = path.dirname(DB_PATH);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
 
-  // 初始化表
-  initSchema(db);
+    // 创建新连接
+    dbInstance = new Database(DB_PATH, {
+      fileMustExist: false,
+      readonly: false,
+    });
 
-  // 保存为单例
-  globalForDb._erp_db = db;
-  globalForDb._erp_db_ready = true;
+    // 配置优化 - 提高稳定性
+    dbInstance.pragma('journal_mode = WAL');
+    dbInstance.pragma('busy_timeout = 30000'); // 30 秒超时
+    dbInstance.pragma('cache_size = -64000'); // 64MB 缓存
+    dbInstance.pragma('synchronous = NORMAL');
+    dbInstance.pragma('temp_store = MEMORY');
+    dbInstance.pragma('wal_autocheckpoint = 1000');
 
-  console.log('[DB] Connection established:', DB_PATH);
-  return db;
+    // 初始化表
+    initSchema(dbInstance);
+
+    isInitializing = false;
+    console.log('[DB] Connection established:', DB_PATH);
+    return dbInstance;
+  } catch (error) {
+    isInitializing = false;
+    dbInstance = null;
+    throw error;
+  }
 }
 
 function initSchema(db: Database.Database): void {
@@ -160,12 +167,24 @@ function initSchema(db: Database.Database): void {
 
 // 优雅关闭
 process.on('beforeExit', () => {
-  if (globalForDb._erp_db) {
+  if (dbInstance) {
     try {
-      globalForDb._erp_db.close();
+      dbInstance.close();
       console.log('[DB] Connection closed gracefully');
     } catch (e) {
       console.error('[DB] Error closing connection:', e);
+    }
+  }
+});
+
+// 处理未捕获异常
+process.on('uncaughtException', (error) => {
+  console.error('[DB] Uncaught exception:', error);
+  if (dbInstance) {
+    try {
+      dbInstance.close();
+    } catch (e) {
+      console.error('[DB] Error closing connection on uncaught exception:', e);
     }
   }
 });
