@@ -188,8 +188,16 @@ export default function ProductsPage() {
             placeholder="按 SKU 或名称搜索..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && fetchProducts(true)}
             style={{ paddingLeft: 32, width: 260 }}
           />
+          <button 
+            className="btn btn-secondary" 
+            onClick={() => fetchProducts(true)}
+            style={{ padding: '6px 12px' }}
+          >
+            <Search size={14} />
+          </button>
         </div>
         <span style={{ fontSize: 13, color: '#16a34a', fontWeight: 600 }}>
           共 {total} 个产品
