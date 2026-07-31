@@ -48,13 +48,29 @@ export function getDb(): Database.Database {
     fs.mkdirSync(dir, { recursive: true });
   }
 
-  const db = new Database(DB_PATH);
+  const db = new Database(DB_PATH, { fileMustExist: false });
   db.pragma('journal_mode = WAL');
-  db.pragma('foreign_keys = ON');
+  db.pragma('busy_timeout = 5000');
+  
+  // 确保表存在
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS store_auth (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        store_name TEXT NOT NULL,
+        api_key TEXT NOT NULL,
+        api_base_url TEXT DEFAULT 'https://marketplace-api.takealot.com/v1',
+        auth_status TEXT DEFAULT 'connected',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+  } catch (e) {
+    console.error('[DB] Failed to create store_auth table:', e);
+  }
 
-  initSchema(db);
   globalForDb._erp_db = db;
-  globalForDb._erp_db_inode = currentInode ?? getFileInode();
+  globalForDb._erp_db_inode = currentInode;
   return db;
 }
 
