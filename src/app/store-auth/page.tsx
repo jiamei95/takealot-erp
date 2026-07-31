@@ -125,6 +125,17 @@ export default function StoreAuthPage() {
       console.log('[StoreAuth] Save successful:', json);
       setShowModal(false);
       fetchStores();
+      
+      // 保存成功后自动触发同步
+      try {
+        await fetch('/api/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'sync' }),
+        });
+      } catch (syncErr) {
+        console.error('Auto sync failed:', syncErr);
+      }
     } catch (err: any) {
       const msg = err?.message || String(err);
       setError(`请求失败: ${msg}`);

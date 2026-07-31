@@ -1,6 +1,7 @@
 import { createServer } from 'http';
 import { parse } from 'url';
 import next from 'next';
+import { startAutoSync } from './lib/auto-sync';
 
 const dev = process.env.COZE_PROJECT_ENV !== 'PROD';
 const hostname = process.env.HOSTNAME || 'localhost';
@@ -31,5 +32,7 @@ app.prepare().then(() => {
         dev ? 'development' : process.env.COZE_PROJECT_ENV
       }`,
     );
+    // 启动自动同步（每60秒）
+    startAutoSync();
   });
 });
