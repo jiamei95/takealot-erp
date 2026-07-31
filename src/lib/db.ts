@@ -10,37 +10,45 @@ const DB_PATH = process.env.NODE_ENV === 'production'
 // 使用 globalThis 确保跨模块单例
 const globalForDb = globalThis as unknown as {
   _erp_db: Database.Database | undefined;
+  _erp_db_ready: boolean;
 };
 
+// 初始化标记
+globalForDb._erp_db_ready = false;
+
 export function getDb(): Database.Database {
-  // 开发环境直接使用单例，不做 inode 检测（避免热更新导致连接重置）
-  if (globalForDb._erp_db) {
-    try {
-      globalForDb._erp_db.prepare('SELECT 1').get();
-      return globalForDb._erp_db;
-    } catch {
-      try { globalForDb._erp_db.close(); } catch { /* ignore */ }
-      globalForDb._erp_db = undefined;
-    }
+  // 如果已有连接且健康，直接返回
+  if (globalForDb._erp_db && globalForDb._erp_db_ready) {
+    return globalForDb._erp_db;
   }
 
+  // 确保目录存在
   const dir = path.dirname(DB_PATH);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
 
-  const db = new Database(DB_PATH, { fileMustExist: false });
-  db.pragma('journal_mode = WAL');
-  db.pragma('busy_timeout = 5000');
-  
-  // 确保表存在
-  try {
-    initSchema(db);
-  } catch (e) {
-    console.error('[DB] Failed to init schema:', e);
-  }
+  // 创建新连接
+  const db = new Database(DB_PATH, {
+    fileMustExist: false,
+    readonly: false,
+  });
 
+  // 配置优化
+  db.pragma('journal_mode = WAL');
+  db.pragma('busy_timeout = 10000');
+  db.pragma('cache_size = -64000'); // 64MB 缓存
+  db.pragma('synchronous = NORMAL');
+  db.pragma('temp_store = MEMORY');
+
+  // 初始化表
+  initSchema(db);
+
+  // 保存为单例
   globalForDb._erp_db = db;
+  globalForDb._erp_db_ready = true;
+
+  console.log('[DB] Connection established:', DB_PATH);
   return db;
 }
 
@@ -106,25 +114,19 @@ function initSchema(db: Database.Database): void {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       po_id INTEGER NOT NULL,
       product_id INTEGER NOT NULL,
-      sku TEXT NOT NULL DEFAULT '',
-      product_name TEXT NOT NULL DEFAULT '',
-      quantity INTEGER NOT NULL DEFAULT 0,
-      cost_price REAL NOT NULL DEFAULT 0,
-      subtotal REAL NOT NULL DEFAULT 0,
+      quantity INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (po_id) REFERENCES purchase_orders(id) ON DELETE CASCADE,
       FOREIGN KEY (product_id) REFERENCES products(id)
     );
 
     CREATE TABLE IF NOT EXISTS store_auth (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      store_name TEXT NOT NULL,
-      api_key TEXT NOT NULL DEFAULT '',
-      api_secret TEXT NOT NULL DEFAULT '',
-      api_base_url TEXT NOT NULL DEFAULT 'https://seller-api.takealot.com',
-      access_token TEXT DEFAULT '',
-      token_expires_at TEXT DEFAULT '',
-      auth_status TEXT NOT NULL DEFAULT 'disconnected',
-      last_sync_at TEXT DEFAULT '',
+      store_name TEXT NOT NULL UNIQUE,
+      api_key TEXT NOT NULL,
+      api_base_url TEXT NOT NULL DEFAULT 'https://marketplace-api.takealot.com/v1',
+      auth_status TEXT NOT NULL DEFAULT 'pending',
+      last_sync_at TEXT,
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now'))
     );
@@ -132,21 +134,38 @@ function initSchema(db: Database.Database): void {
     CREATE TABLE IF NOT EXISTS product_warehouse_stock (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       product_id INTEGER NOT NULL,
-      sku TEXT NOT NULL,
-      warehouse_id TEXT NOT NULL DEFAULT '',
+      warehouse_code TEXT NOT NULL,
       warehouse_name TEXT NOT NULL DEFAULT '',
-      quantity INTEGER NOT NULL DEFAULT 0,
-      available INTEGER NOT NULL DEFAULT 0,
-      reserved INTEGER NOT NULL DEFAULT 0,
-      in_transit INTEGER NOT NULL DEFAULT 0,
+      stock_available INTEGER NOT NULL DEFAULT 0,
+      stock_reserved INTEGER NOT NULL DEFAULT 0,
+      stock_in_transit INTEGER NOT NULL DEFAULT 0,
+      stock_total INTEGER NOT NULL DEFAULT 0,
       updated_at TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+      UNIQUE(product_id, warehouse_code)
     );
-  `);
 
-  // Migration: add api_base_url column if not exists
-  const columns = db.prepare('PRAGMA table_info(store_auth)').all() as { name: string }[];
-  if (!columns.some(c => c.name === 'api_base_url')) {
-    db.exec(`ALTER TABLE store_auth ADD COLUMN api_base_url TEXT NOT NULL DEFAULT 'https://seller-api.takealot.com'`);
-  }
+    -- 创建索引
+    CREATE INDEX IF NOT EXISTS idx_orders_order_number ON orders(order_number);
+    CREATE INDEX IF NOT EXISTS idx_orders_product_id ON orders(product_id);
+    CREATE INDEX IF NOT EXISTS idx_orders_store_name ON orders(store_name);
+    CREATE INDEX IF NOT EXISTS idx_orders_order_date ON orders(order_date);
+    CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku);
+    CREATE INDEX IF NOT EXISTS idx_purchase_orders_po_number ON purchase_orders(po_number);
+    CREATE INDEX IF NOT EXISTS idx_purchase_orders_status ON purchase_orders(status);
+    CREATE INDEX IF NOT EXISTS idx_store_auth_store_name ON store_auth(store_name);
+    CREATE INDEX IF NOT EXISTS idx_product_warehouse_stock_product_id ON product_warehouse_stock(product_id);
+  `);
 }
+
+// 优雅关闭
+process.on('beforeExit', () => {
+  if (globalForDb._erp_db) {
+    try {
+      globalForDb._erp_db.close();
+      console.log('[DB] Connection closed gracefully');
+    } catch (e) {
+      console.error('[DB] Error closing connection:', e);
+    }
+  }
+});
