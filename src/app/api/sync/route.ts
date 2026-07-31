@@ -14,8 +14,8 @@ export async function GET(request: NextRequest) {
     const productsCount = (db.prepare('SELECT COUNT(*) as cnt FROM products').get() as { cnt: number }).cnt;
     const ordersCount = (db.prepare('SELECT COUNT(*) as cnt FROM orders').get() as { cnt: number }).cnt;
     
-    // 获取 API Key 状态
-    const auth = db.prepare('SELECT api_key, store_name FROM store_auth LIMIT 1').get() as { api_key: string; store_name: string } | undefined;
+    // 获取 API Key 状态 - 检查是否有有效的 API Key
+    const auth = db.prepare(`SELECT api_key, store_name, auth_status FROM store_auth WHERE api_key != '' AND api_key IS NOT NULL LIMIT 1`).get() as { api_key: string; store_name: string; auth_status: string } | undefined;
     
     return jsonResponse({
       success: true,
@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
         },
         apiKeyConfigured: !!auth?.api_key,
         storeName: auth?.store_name || null,
+        authStatus: auth?.auth_status || null,
       },
     }, request);
   } catch (err: unknown) {

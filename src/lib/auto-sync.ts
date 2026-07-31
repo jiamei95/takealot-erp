@@ -85,14 +85,27 @@ interface CollectionResponse<T> {
 function getApiKey(): string | null {
   try {
     const db = getDb();
-    const auth = db.prepare('SELECT api_key, auth_status FROM store_auth WHERE api_key != "" LIMIT 1').get() as { api_key: string; auth_status: string } | undefined;
+    
+    // 先检查表是否存在
+    const tableExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='store_auth'").get();
+    if (!tableExists) {
+      console.log('[AutoSync] store_auth table not found');
+      return null;
+    }
+    
+    // 查询有效的 API Key
+    const auth = db.prepare(`SELECT api_key, auth_status FROM store_auth WHERE api_key != '' AND api_key IS NOT NULL LIMIT 1`).get() as { api_key: string; auth_status: string } | undefined;
+    
     if (auth?.api_key) {
+      console.log('[AutoSync] Found API key:', auth.api_key.substring(0, 20) + '...');
       // 更新状态为已连接
       if (auth.auth_status !== 'connected') {
         db.prepare("UPDATE store_auth SET auth_status = 'connected', updated_at = datetime('now') WHERE api_key = ?").run(auth.api_key);
       }
       return auth.api_key;
     }
+    
+    console.log('[AutoSync] No valid API key found in database');
     return null;
   } catch (e) {
     console.error('[AutoSync] Failed to get API key:', e);
