@@ -48,6 +48,8 @@ export default function ProductsPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [error, setError] = useState('');
   const [warehouseStock, setWarehouseStock] = useState<Map<number, WarehouseStock[]>>(new Map());
   const [selectedProduct, setSelectedProduct] = useState<number | null>(null);
@@ -65,6 +67,8 @@ export default function ProductsPage() {
     try {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
+      params.set('page', page.toString());
+      params.set('page_size', pageSize.toString());
       const res = await fetch(`/api/products?${params}`);
       const json = await res.json();
       setProducts(json.products);
@@ -84,7 +88,7 @@ export default function ProductsPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, lastFetchTime]);
+  }, [search, page, pageSize, lastFetchTime]);
 
   useEffect(() => {
     fetchProducts();
@@ -364,6 +368,59 @@ export default function ProductsPage() {
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+        
+        {/* 分页控件 */}
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          padding: '16px 0',
+          marginTop: 16
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#64748b' }}>
+            <span>每页显示</span>
+            <select 
+              value={pageSize} 
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setPage(1);
+              }}
+              style={{
+                padding: '4px 8px',
+                border: '1px solid #e2e8f0',
+                borderRadius: 4,
+                background: '#fff',
+                fontSize: 13
+              }}
+            >
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+            <span>条</span>
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 13, color: '#64748b' }}>
+              第 {page} 页 / 共 {Math.ceil(total / pageSize)} 页
+            </span>
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => setPage(Math.max(1, page - 1))}
+              disabled={page === 1}
+              style={{ marginLeft: 8 }}
+            >
+              上一页
+            </button>
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => setPage(Math.min(Math.ceil(total / pageSize), page + 1))}
+              disabled={page >= Math.ceil(total / pageSize)}
+            >
+              下一页
+            </button>
           </div>
         </div>
       )}
