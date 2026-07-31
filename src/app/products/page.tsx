@@ -16,6 +16,16 @@ interface Product {
   created_at: string;
 }
 
+interface WarehouseStock {
+  id: number;
+  warehouse_id: string;
+  warehouse_name: string;
+  quantity: number;
+  available: number;
+  reserved: number;
+  in_transit: number;
+}
+
 function formatZAR(amount: number): string {
   return `R ${amount.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
@@ -39,6 +49,8 @@ export default function ProductsPage() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [warehouseStock, setWarehouseStock] = useState<Map<number, WarehouseStock[]>>(new Map());
+  const [selectedProduct, setSelectedProduct] = useState<number | null>(null);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -49,6 +61,21 @@ export default function ProductsPage() {
       const json = await res.json();
       setProducts(json.products);
       setTotal(json.total);
+      
+      // 获取每个产品的仓库库存
+      const warehouseMap = new Map<number, WarehouseStock[]>();
+      for (const product of json.products) {
+        try {
+          const stockRes = await fetch(`/api/products/${product.id}/warehouse-stock`);
+          const stockJson = await stockRes.json();
+          if (stockJson.success && stockJson.data.warehouse_stock) {
+            warehouseMap.set(product.id, stockJson.data.warehouse_stock);
+          }
+        } catch (err) {
+          console.error(`Failed to fetch warehouse stock for product ${product.id}:`, err);
+        }
+      }
+      setWarehouseStock(warehouseMap);
     } catch (err) {
       console.error('Failed to fetch products:', err);
     } finally {
@@ -262,8 +289,18 @@ export default function ProductsPage() {
                             {p.stock_available ?? 0}
                           </span>
                           <span style={{ fontSize: 10, color: '#64748b' }}>
-                            {'\u53ef\u552e'}
+                            可售
                           </span>
+                          {warehouseStock.get(p.id) && warehouseStock.get(p.id)!.length > 0 && (
+                            <div style={{ marginTop: 4, paddingTop: 4, borderTop: '1px solid #e2e8f0' }}>
+                              {warehouseStock.get(p.id)!.map((ws) => (
+                                <div key={ws.warehouse_id} style={{ fontSize: 10, color: '#64748b', display: 'flex', justifyContent: 'space-between' }}>
+                                  <span>{ws.warehouse_name || ws.warehouse_id}</span>
+                                  <span style={{ fontWeight: 600 }}>{ws.available}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </td>
                       <td>{formatZAR(p.cost_price)}</td>

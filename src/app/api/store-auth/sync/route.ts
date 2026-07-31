@@ -54,6 +54,18 @@ interface TakealotShipment {
   shipment_items?: TakealotShipmentItem[];
 }
 
+// 库存接口 - 每个仓库的库存
+interface TakealotInventory {
+  sku: string;
+  offer_id?: string;
+  warehouse_id?: string;
+  warehouse_name?: string;
+  quantity?: number;
+  available?: number;
+  reserved?: number;
+  in_transit?: number;
+}
+
 interface TakealotSale {
   order_item_id: number;
   order_id: number;
@@ -215,6 +227,125 @@ async function syncOffers(db: ReturnType<typeof getDb>, baseUrl: string, apiKey:
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     return { count: totalSynced, error: `产品同步异常: ${msg}` };
+  }
+
+  return { count: totalSynced };
+}
+
+// --- Sync Inventory (Warehouse Stock) ---
+async function syncInventory(db: ReturnType<typeof getDb>, baseUrl: string, apiKey: string, debug: Array<{ url: string; status: number; body?: string }>): Promise<{ count: number; error?: string }> {
+  let totalSynced = 0;
+  let continuationToken: string | undefined;
+  let pageCount = 0;
+
+  try {
+    do {
+      const { data, status, body, error } = await fetchTakealot<CollectionResponse<TakealotInventory>>(
+        baseUrl, '/inventory', apiKey, continuationToken,
+      );
+
+      debug.push({ url: `${baseUrl}/inventory${continuationToken ? `?continuation_token=${continuationToken}` : ''}`, status, body });
+
+      if (error || !data) {
+        // 如果库存接口不存在，返回 0 但不报错
+        if (status === 404 || status === 403) {
+          return { count: 0, error: undefined };
+        }
+        return { count: totalSynced, error: `请求失败 (${status || error}): ${error || body.substring(0, 200)}` };
+      }
+
+      const items = data.items || [];
+      if (items.length === 0) break;
+
+      // 按 SKU 分组，汇总每个仓库的库存
+      const inventoryBySku = new Map<string, {
+        total: number;
+        available: number;
+        warehouses: Map<string, { quantity: number; available: number; name?: string }>;
+      }>();
+
+      for (const inv of items) {
+        const sku = inv.sku;
+        if (!inventoryBySku.has(sku)) {
+          inventoryBySku.set(sku, {
+            total: 0,
+            available: 0,
+            warehouses: new Map(),
+          });
+        }
+
+        const skuData = inventoryBySku.get(sku)!;
+        const warehouseId = inv.warehouse_id || inv.warehouse_name || 'default';
+        const quantity = inv.quantity || 0;
+        const available = inv.available || 0;
+
+        skuData.total += quantity;
+        skuData.available += available;
+        skuData.warehouses.set(warehouseId, {
+          quantity,
+          available,
+          name: inv.warehouse_name,
+        });
+      }
+
+      // 更新产品表的库存字段
+      const updateStock = db.prepare(`
+        UPDATE products 
+        SET stock_quantity = ?, stock_available = ?, updated_at = datetime('now')
+        WHERE sku = ?
+      `);
+
+      // 插入/更新仓库库存表
+      const upsertWarehouseStock = db.prepare(`
+        INSERT INTO product_warehouse_stock (product_id, sku, warehouse_id, warehouse_name, quantity, available, reserved, in_transit, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, 0, 0, datetime('now'))
+        ON CONFLICT(product_id, warehouse_id) DO UPDATE SET
+          quantity = excluded.quantity,
+          available = excluded.available,
+          updated_at = datetime('now')
+      `);
+
+      const findProduct = db.prepare('SELECT id FROM products WHERE sku = ?');
+
+      const tx = db.transaction((skus: Array<{ sku: string; total: number; available: number; warehouses: Map<string, { quantity: number; available: number; name?: string }> }>) => {
+        for (const item of skus) {
+          // 更新产品总库存
+          updateStock.run(item.total, item.available, item.sku);
+          
+          // 查找产品 ID
+          const product = findProduct.get(item.sku) as { id: number } | undefined;
+          if (product) {
+            // 插入每个仓库的库存
+            for (const [warehouseId, data] of item.warehouses.entries()) {
+              upsertWarehouseStock.run(
+                product.id,
+                item.sku,
+                warehouseId,
+                data.name || warehouseId,
+                data.quantity,
+                data.available,
+              );
+            }
+          }
+        }
+      });
+
+      const skuArray = Array.from(inventoryBySku.entries()).map(([sku, data]) => ({
+        sku,
+        total: data.total,
+        available: data.available,
+        warehouses: data.warehouses,
+      }));
+
+      tx(skuArray);
+      totalSynced += items.length;
+
+      continuationToken = data.continuation_token || undefined;
+      pageCount++;
+    } while (continuationToken && pageCount < MAX_PAGES);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { count: totalSynced, error: `库存同步异常: ${msg}` };
   }
 
   return { count: totalSynced };
@@ -432,6 +563,10 @@ export async function POST(request: NextRequest) {
     const productResult = await syncOffers(db, baseUrl, apiKey, debug);
     if (productResult.error) errors.push(productResult.error);
 
+    // Sync inventory (warehouse stock)
+    const inventoryResult = await syncInventory(db, baseUrl, apiKey, debug);
+    if (inventoryResult.error) errors.push(inventoryResult.error);
+
     // Sync sales (orders)
     const storeName = (auth.store_name as string) || '';
     const salesResult = await syncSales(db, baseUrl, apiKey, storeName, debug);
@@ -456,8 +591,8 @@ export async function POST(request: NextRequest) {
       },
       errors,
       message: errors.length === 0
-        ? `同步成功！共同步了 ${productResult.count} 个产品、${salesResult.count} 个订单和 ${poResult.count} 个 PO 单。`
-        : `同步部分完成：${productResult.count} 个产品，${salesResult.count} 个订单，${poResult.count} 个 PO 单。${errors.join('; ')}`,
+        ? `同步成功！共同步了 ${productResult.count} 个产品、${salesResult.count} 个订单、${poResult.count} 个 PO 单和 ${inventoryResult.count} 条库存记录。`
+        : `同步部分完成：${productResult.count} 个产品，${salesResult.count} 个订单，${poResult.count} 个 PO 单，${inventoryResult.count} 条库存。${errors.join('; ')}`,
       debug: debug.slice(-10),
     };
 

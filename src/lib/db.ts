@@ -142,6 +142,20 @@ function initSchema(db: Database.Database): void {
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS product_warehouse_stock (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER NOT NULL,
+      sku TEXT NOT NULL,
+      warehouse_id TEXT NOT NULL DEFAULT '',
+      warehouse_name TEXT NOT NULL DEFAULT '',
+      quantity INTEGER NOT NULL DEFAULT 0,
+      available INTEGER NOT NULL DEFAULT 0,
+      reserved INTEGER NOT NULL DEFAULT 0,
+      in_transit INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    );
   `);
 
   // Migration: add api_base_url column if not exists
