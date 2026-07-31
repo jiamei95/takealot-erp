@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Plus, Pencil, Trash2, Search, X, Package, RefreshCw } from 'lucide-react';
+import { useWebSocket } from '@/hooks/useWebSocket';
 
 interface Product {
   id: number;
@@ -55,7 +56,17 @@ export default function ProductsPage() {
   const [selectedProduct, setSelectedProduct] = useState<number | null>(null);
   const [lastFetchTime, setLastFetchTime] = useState<number>(0);
 
-  const CACHE_DURATION = 5 * 60 * 1000; // 5 分钟缓存
+  const CACHE_DURATION = 1 * 60 * 1000; // 1 分钟缓存
+
+  // WebSocket 实时刷新
+  useWebSocket({
+    onDataUpdate: (data) => {
+      if (data.dataType === 'sync' || data.dataType === 'products') {
+        console.log('[Products] Real-time update received, refreshing...');
+        fetchProducts(true); // 强制刷新
+      }
+    },
+  });
 
   const fetchProducts = useCallback(async (forceRefresh = false) => {
     const now = Date.now();

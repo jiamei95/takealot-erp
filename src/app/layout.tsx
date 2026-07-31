@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import Sidebar from '@/components/sidebar';
 import { SyncStatusBadge } from '@/components/sync-status';
+import { WebSocketStatus } from '@/components/websocket-status';
 
 export const metadata: Metadata = {
   title: 'Takealot ERP \u7ba1\u7406\u7cfb\u7edf',
@@ -19,8 +20,9 @@ export default function RootLayout({
         <div style={{ display: 'flex', minHeight: '100vh' }}>
           <Sidebar />
           <main className="main-content" style={{ flex: 1 }}>
-            <div style={{ padding: '16px 24px', borderBottom: '1px solid #e2e8f0', background: '#fff' }}>
+            <div style={{ padding: '16px 24px', borderBottom: '1px solid #e2e8f0', background: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <SyncStatusBadge />
+              <WebSocketStatus />
             </div>
             <div style={{ padding: 24 }}>
               {children}

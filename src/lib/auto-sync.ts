@@ -3,11 +3,12 @@
 // 永久授权：只要数据库中有 API Key，就持续同步
 
 import { getDb } from './db';
+import { notifyDataUpdate } from './websocket';
 
 const DEFAULT_BASE_URL = 'https://marketplace-api.takealot.com/v1';
 const PAGE_LIMIT = 100;
 const MAX_PAGES = 20;
-const SYNC_INTERVAL_MS = 60 * 1000; // 60秒
+const SYNC_INTERVAL_MS = 15 * 1000; // 15秒
 
 // 同步状态
 interface SyncStatus {
@@ -332,6 +333,9 @@ export async function performSync(): Promise<SyncStatus> {
     syncStatus.error = productsResult.error || ordersResult.error || null;
     syncStatus.syncEnabled = true;
     syncStatus.totalSyncs += 1;
+    
+    // 通知前端有新数据
+    notifyDataUpdate('sync', productsResult.count + ordersResult.count);
     
     // 更新最后同步时间
     try {
