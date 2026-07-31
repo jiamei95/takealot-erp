@@ -54,19 +54,9 @@ export function getDb(): Database.Database {
   
   // 确保表存在
   try {
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS store_auth (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        store_name TEXT NOT NULL,
-        api_key TEXT NOT NULL,
-        api_base_url TEXT DEFAULT 'https://marketplace-api.takealot.com/v1',
-        auth_status TEXT DEFAULT 'connected',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
+    initSchema(db);
   } catch (e) {
-    console.error('[DB] Failed to create store_auth table:', e);
+    console.error('[DB] Failed to init schema:', e);
   }
 
   globalForDb._erp_db = db;
