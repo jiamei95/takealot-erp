@@ -246,7 +246,7 @@ async function syncSales(db: ReturnType<typeof getDb>, baseUrl: string, apiKey: 
           (order_number, order_date, product_id, quantity, selling_price, cost_price,
            platform_commission, payment_fee, storage_fee, other_fees, profit,
            status, store_name, created_at)
-        VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, 0, ?, ?, ?, datetime('now'))
+        VALUES (?, ?, ?, ?, ?, 0, ?, ?, 0, 0, ?, ?, ?, datetime('now'))
       `);
 
       const findProduct = db.prepare('SELECT id FROM products WHERE sku = ? OR takealot_product_id = ? LIMIT 1');
@@ -289,7 +289,7 @@ async function syncSales(db: ReturnType<typeof getDb>, baseUrl: string, apiKey: 
 
           insertOrder.run(
             orderNumber, orderDate, productId, quantity, sellingPrice,
-            successFee, fulfillmentFee, courierFee,
+            successFee, fulfillmentFee,
             profit, status, storeName || 'Default Store',
           );
         }

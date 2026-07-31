@@ -280,7 +280,7 @@ export default function StoreAuthPage() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {stores.map((s) => {
-            const isConnected = s.auth_status === 'connected';
+            const isConnected = s.auth_status === 'connected' || s.api_key;
             return (
               <div className="card" key={s.id}>
                 <div className="card-header">
