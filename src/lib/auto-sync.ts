@@ -1,11 +1,13 @@
 // 后台自动同步服务
 // 每分钟自动从 Takealot API 同步数据
+// 永久授权：只要数据库中有 API Key，就持续同步
 
 import { getDb } from './db';
 
 const DEFAULT_BASE_URL = 'https://marketplace-api.takealot.com/v1';
 const PAGE_LIMIT = 100;
 const MAX_PAGES = 20;
+const SYNC_INTERVAL_MS = 60 * 1000; // 60秒
 
 // 同步状态
 interface SyncStatus {
@@ -14,6 +16,8 @@ interface SyncStatus {
   productsCount: number;
   ordersCount: number;
   error: string | null;
+  syncEnabled: boolean;
+  totalSyncs: number;
 }
 
 let syncStatus: SyncStatus = {
@@ -22,6 +26,8 @@ let syncStatus: SyncStatus = {
   productsCount: 0,
   ordersCount: 0,
   error: null,
+  syncEnabled: false,
+  totalSyncs: 0,
 };
 
 let syncInterval: NodeJS.Timeout | null = null;
@@ -75,11 +81,23 @@ interface CollectionResponse<T> {
   continuation_token: string;
 }
 
-// 获取 API Key
+// 获取 API Key（永久授权：只要数据库中有就使用）
 function getApiKey(): string | null {
-  const db = getDb();
-  const auth = db.prepare('SELECT api_key FROM store_auth LIMIT 1').get() as { api_key: string } | undefined;
-  return auth?.api_key || null;
+  try {
+    const db = getDb();
+    const auth = db.prepare('SELECT api_key, auth_status FROM store_auth WHERE api_key != "" LIMIT 1').get() as { api_key: string; auth_status: string } | undefined;
+    if (auth?.api_key) {
+      // 更新状态为已连接
+      if (auth.auth_status !== 'connected') {
+        db.prepare("UPDATE store_auth SET auth_status = 'connected', updated_at = datetime('now') WHERE api_key = ?").run(auth.api_key);
+      }
+      return auth.api_key;
+    }
+    return null;
+  } catch (e) {
+    console.error('[AutoSync] Failed to get API key:', e);
+    return null;
+  }
 }
 
 // Takealot API 请求
@@ -299,6 +317,16 @@ export async function performSync(): Promise<SyncStatus> {
     syncStatus.ordersCount = ordersResult.count;
     syncStatus.lastSyncTime = new Date().toISOString();
     syncStatus.error = productsResult.error || ordersResult.error || null;
+    syncStatus.syncEnabled = true;
+    syncStatus.totalSyncs += 1;
+    
+    // 更新最后同步时间
+    try {
+      const db = getDb();
+      db.prepare("UPDATE store_auth SET last_sync_at = datetime('now'), updated_at = datetime('now') WHERE api_key != ''").run();
+    } catch (e) {
+      console.error('[AutoSync] Failed to update last_sync_at:', e);
+    }
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     syncStatus.error = `同步失败: ${msg}`;
@@ -315,32 +343,49 @@ export function getSyncStatus(): SyncStatus {
 }
 
 // 启动自动同步（每60秒）
+// 永久授权模式：只要有 API Key 就持续同步
 export function startAutoSync(): void {
   if (syncInterval) {
     console.log('[AutoSync] Already running');
     return;
   }
 
-  console.log('[AutoSync] Starting auto sync every 60 seconds...');
-  
-  // 立即执行一次
-  performSync().then(status => {
-    console.log('[AutoSync] Initial sync completed:', status);
-  });
+  // 检查是否有授权
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    console.log('[AutoSync] No API key found, waiting for authorization...');
+    // 即使没有授权，也启动检查循环，等待用户授权
+  }
 
-  // 每60秒执行一次
-  syncInterval = setInterval(() => {
+  console.log('[AutoSync] Starting permanent auto sync every 60 seconds...');
+  syncStatus.syncEnabled = true;
+  
+  // 立即执行一次（如果有授权）
+  if (apiKey) {
     performSync().then(status => {
-      console.log('[AutoSync] Sync completed:', status);
+      console.log('[AutoSync] Initial sync completed:', status);
     });
-  }, 60 * 1000);
+  }
+
+  // 每60秒检查并同步
+  syncInterval = setInterval(() => {
+    const key = getApiKey();
+    if (key) {
+      performSync().then(status => {
+        console.log('[AutoSync] Sync completed:', status);
+      });
+    } else {
+      console.log('[AutoSync] Waiting for authorization...');
+    }
+  }, SYNC_INTERVAL_MS);
 }
 
-// 停止自动同步
+// 停止自动同步（仅在用户删除授权时调用）
 export function stopAutoSync(): void {
   if (syncInterval) {
     clearInterval(syncInterval);
     syncInterval = null;
-    console.log('[AutoSync] Stopped');
+    syncStatus.syncEnabled = false;
+    console.log('[AutoSync] Stopped - authorization removed');
   }
 }

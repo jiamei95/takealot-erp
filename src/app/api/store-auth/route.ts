@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { jsonResponse, errorResponse, optionsResponse } from '@/lib/cors';
+import { stopAutoSync } from '@/lib/auto-sync';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,6 +77,14 @@ export async function DELETE(request: Request) {
   }
 
   db.prepare('DELETE FROM store_auth WHERE id = ?').run(Number(id));
+  
+  // 检查是否还有其他授权
+  const remaining = db.prepare('SELECT COUNT(*) as cnt FROM store_auth WHERE api_key != ""').get() as { cnt: number };
+  if (remaining.cnt === 0) {
+    // 没有授权了，停止自动同步
+    stopAutoSync();
+  }
+  
   return jsonResponse({ success: true }, request);
 }
 

@@ -15,6 +15,8 @@ interface SyncStatus {
   };
   apiKeyConfigured: boolean;
   storeName: string | null;
+  syncEnabled: boolean;
+  totalSyncs: number;
 }
 
 export function SyncStatusBadge() {
@@ -110,14 +112,19 @@ export function SyncStatusBadge() {
       
       <div style={{ flex: 1 }}>
         <div style={{ fontWeight: 600, color: isHealthy ? '#166534' : status.error ? '#991b1b' : '#854d0e' }}>
-          {status.isSyncing ? '同步中...' : isHealthy ? '自动同步运行中' : status.error ? '同步异常' : '等待配置'}
+          {status.isSyncing ? '同步中...' : isHealthy ? '永久授权 · 自动同步中' : status.error ? '同步异常' : '等待授权'}
         </div>
         <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
-          上次同步: {lastSync} | 产品: {status.dbStats?.products || 0} | 订单: {status.dbStats?.orders || 0}
+          上次同步: {lastSync} | 产品: {status.dbStats?.products || 0} | 订单: {status.dbStats?.orders || 0} | 同步次数: {status.totalSyncs || 0}
         </div>
         {status.error && (
           <div style={{ fontSize: 11, color: '#dc2626', marginTop: 2 }}>
             错误: {status.error}
+          </div>
+        )}
+        {isHealthy && (
+          <div style={{ fontSize: 10, color: '#16a34a', marginTop: 2 }}>
+            每60秒自动同步 · 授权永久有效
           </div>
         )}
       </div>
