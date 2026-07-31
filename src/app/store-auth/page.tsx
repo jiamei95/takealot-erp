@@ -39,6 +39,7 @@ export default function StoreAuthPage() {
     try {
       const res = await fetch('/api/store-auth');
       const text = await res.text();
+      console.log('[StoreAuth] Response:', text.substring(0, 200));
       let json;
       try {
         json = text ? JSON.parse(text) : null;
@@ -47,10 +48,14 @@ export default function StoreAuthPage() {
         return;
       }
       if (json?.store_auth) {
+        console.log('[StoreAuth] Found stores:', json.store_auth.length);
         setStores(json.store_auth);
+      } else {
+        console.log('[StoreAuth] No store_auth in response');
+        setStores([]);
       }
-    } catch (err: any) {
-      const msg = err?.message || String(err);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
       console.error('Failed to fetch store auth:', err);
       setError(`加载店铺列表失败: ${msg}`);
     } finally {
@@ -124,7 +129,12 @@ export default function StoreAuthPage() {
       
       console.log('[StoreAuth] Save successful:', json);
       setShowModal(false);
-      fetchStores();
+      
+      // 刷新列表
+      await fetchStores();
+      
+      // 显示成功提示
+      alert('授权保存成功！系统已开始自动同步（每60秒一次）');
       
       // 保存成功后自动触发同步
       try {
@@ -136,8 +146,8 @@ export default function StoreAuthPage() {
       } catch (syncErr) {
         console.error('Auto sync failed:', syncErr);
       }
-    } catch (err: any) {
-      const msg = err?.message || String(err);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
       setError(`请求失败: ${msg}`);
       console.error('[StoreAuth] Save error:', err);
     } finally {
@@ -238,13 +248,13 @@ export default function StoreAuthPage() {
       </div>
 
       <div className="toolbar">
-        <span style={{ fontSize: 12, color: '#64748b' }}>
-          {'\u5df2\u6388\u6743\u5e97\u94fa: '}{stores.length} {'\u4e2a'}
+        <span style={{ fontSize: 13, color: '#16a34a', fontWeight: 600 }}>
+          已授权店铺: {stores.length} 个
         </span>
         <div style={{ flex: 1 }} />
         <button className="btn btn-primary" onClick={openCreate}>
           <Plus size={14} />
-          {'\u6dfb\u52a0\u5e97\u94fa\u6388\u6743'}
+          添加店铺授权
         </button>
       </div>
 
