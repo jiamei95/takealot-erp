@@ -371,7 +371,6 @@ export default function ProductsPage() {
           </div>
         </div>
         
-        {/* 分页控件 */}
         <div style={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
